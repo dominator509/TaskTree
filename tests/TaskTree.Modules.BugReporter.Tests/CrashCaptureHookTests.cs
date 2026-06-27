@@ -1,0 +1,3 @@
+// SPEC-DERIVED-PHASE3D  HALT #22
+using System; using Microsoft.VisualStudio.TestTools.UnitTesting; using TaskTree.Modules.BugReporter;
+namespace TaskTree.Modules.BugReporter.Tests{[TestClass]public class CrashCaptureHookTests{[TestMethod]public void HookGlobalCrashHandler_DoesNotThrow(){new CrashCaptureHook().HookGlobalCrashHandler();}[TestMethod]public void HookGlobalCrashHandler_Idempotent(){var h=new CrashCaptureHook();h.HookGlobalCrashHandler();h.HookGlobalCrashHandler();}[TestMethod]public void RaiseForTests_RaisesCrashCaptured(){var h=new CrashCaptureHook();var raised=false;h.CrashCaptured+=(s,e)=>raised=e.Message=="x";h.RaiseForTests(new InvalidOperationException("x"));Assert.IsTrue(raised);}}}

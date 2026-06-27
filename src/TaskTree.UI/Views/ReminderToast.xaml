@@ -1,0 +1,32 @@
+<Window x:Class="TaskTree.UI.Views.ReminderToast"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="TaskTree Reminder"
+        Width="380" Height="120"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        Topmost="True"
+        ShowInTaskbar="False"
+        WindowStartupLocation="Manual">
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/TaskTree.UI;component/Themes/ThemeResources.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Window.Resources>
+    <Border Background="{DynamicResource TaskTreePanelBackgroundBrush}"
+            CornerRadius="{DynamicResource TaskTreePanelCornerRadius}"
+            Padding="16"
+            BorderBrush="{Binding PriorityColor}"
+            BorderThickness="2">
+        <StackPanel>
+            <DockPanel>
+                <TextBlock Text="{Binding Title}" FontSize="14" FontWeight="Bold" Foreground="White" />
+                <TextBlock Text="{Binding ReasonLabel}" FontSize="12" Foreground="{DynamicResource TaskTreeMutedTextBrush}" Margin="8,0,0,0" VerticalAlignment="Center" />
+            </DockPanel>
+            <TextBlock Text="{Binding Message}" FontSize="12" Foreground="{DynamicResource TaskTreeMutedTextBrush}" Margin="0,4,0,0" TextWrapping="Wrap" />
+        </StackPanel>
+    </Border>
+</Window>

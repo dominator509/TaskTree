@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Phase 2B Msg 1 NEW project (HALT #2). MSTest with WPF support. -->
+
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <IsPackable>false</IsPackable>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>TaskTree.UI.Tests</RootNamespace>
+    <AssemblyName>TaskTree.UI.Tests</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="MSTest.TestAdapter" Version="3.6.1" />
+    <PackageReference Include="MSTest.TestFramework" Version="3.6.1" />
+    <PackageReference Include="Moq" Version="4.20.72" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\TaskTree.Core\TaskTree.Core.csproj" />
+    <ProjectReference Include="..\..\src\TaskTree.UI\TaskTree.UI.csproj" />
+    <ProjectReference Include="..\TaskTree.TestSupport\TaskTree.TestSupport.csproj" />
+  </ItemGroup>
+
+</Project>

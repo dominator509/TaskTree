@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Phase 2A Msg 1: Gap #97/#98 promotion to TaskTree.TestSupport project. -->
+  <!-- Shared test helpers (FakeClock + InMemorySecureStore) for all test projects. -->
+
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <IsPackable>false</IsPackable>
+    <RootNamespace>TaskTree.TestSupport</RootNamespace>
+    <AssemblyName>TaskTree.TestSupport</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\TaskTree.Core\TaskTree.Core.csproj" />
+  </ItemGroup>
+
+</Project>

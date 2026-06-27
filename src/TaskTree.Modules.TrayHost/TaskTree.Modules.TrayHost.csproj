@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    TaskTree.Modules.TrayHost
+    AMENDS the Phase 0 Msg 1 scaffold csproj with NEW PackageReference:
+      - H.NotifyIcon.Wpf 2.0.108 (per Architecture §12; HALT #5 Option A)
+    Phase 5A repo stitch MUST verify supersedes the scaffold version.
+    Phase 5A MUST also `dotnet restore` to validate the package version is
+    still resolvable on NuGet — see G1E-H1.
+    Architecture §4.1 declares HIGH complexity; live API is reserved for Codex 5E.
+    See PHASE1E-DERIVATIONS.md §11.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <Nullable>enable</Nullable>
+    <LangVersion>12</LangVersion>
+    <IsPackable>false</IsPackable>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <RootNamespace>TaskTree.Modules.TrayHost</RootNamespace>
+    <AssemblyName>TaskTree.Modules.TrayHost</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="H.NotifyIcon.Wpf" Version="2.0.108" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\TaskTree.Core\TaskTree.Core.csproj" />
+  </ItemGroup>
+</Project>

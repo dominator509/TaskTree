@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Phase 2F NEW project. Gap #166: Architecture Section 3.3 must list this module. -->
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>TaskTree.Modules.SessionLock</RootNamespace>
+    <AssemblyName>TaskTree.Modules.SessionLock</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\TaskTree.Core\TaskTree.Core.csproj" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  File: src/TaskTree.Modules.BugReporter/TaskTree.Modules.BugReporter.csproj
+  Purpose: BugReporter module — crash capture, PHI redaction, email + GitHub Issues delivery per Architecture §9.2.
+  Architecture.md References: §3.3 (Folder Structure), §12 (Tech Stack)
+  Roadmap.md References: Phase 0 — Project Scaffold
+  D1: This header satisfies anti-drift rule D1.
+-->
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <LangVersion>12.0</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+    <RootNamespace>TaskTree.Modules.BugReporter</RootNamespace>
+    <AssemblyName>TaskTree.Modules.BugReporter</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\TaskTree.Core\TaskTree.Core.csproj" />
+  </ItemGroup>
+
+</Project>

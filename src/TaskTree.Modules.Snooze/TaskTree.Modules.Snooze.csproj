@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Phase 2G NEW project. Gap #181: Architecture Section 3.3 must list this module. -->
+  <PropertyGroup><TargetFramework>net8.0-windows</TargetFramework><Nullable>enable</Nullable><ImplicitUsings>enable</ImplicitUsings><RootNamespace>TaskTree.Modules.Snooze</RootNamespace><AssemblyName>TaskTree.Modules.Snooze</AssemblyName></PropertyGroup>
+  <ItemGroup><ProjectReference Include="..\TaskTree.Core\TaskTree.Core.csproj" /></ItemGroup>
+</Project>

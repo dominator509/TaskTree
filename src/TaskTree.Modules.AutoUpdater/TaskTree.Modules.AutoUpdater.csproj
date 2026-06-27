@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Phase 3A patch: NSec.Cryptography for Ed25519 verification per Architecture.md Section 12. -->
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>TaskTree.Modules.AutoUpdater</RootNamespace>
+    <AssemblyName>TaskTree.Modules.AutoUpdater</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="NSec.Cryptography" Version="24.4.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\TaskTree.Core\TaskTree.Core.csproj" />
+  </ItemGroup>
+</Project>

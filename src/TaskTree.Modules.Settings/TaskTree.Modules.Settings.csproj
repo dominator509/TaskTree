@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Phase 2E Msg 1 NEW project (Gap #148 Architecture amendment required). -->
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>TaskTree.Modules.Settings</RootNamespace>
+    <AssemblyName>TaskTree.Modules.Settings</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\TaskTree.Core\TaskTree.Core.csproj" />
+  </ItemGroup>
+</Project>

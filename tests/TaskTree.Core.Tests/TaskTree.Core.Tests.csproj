@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  File: tests/TaskTree.Core.Tests/TaskTree.Core.Tests.csproj
+  Purpose: Unit tests for TaskTree.Core abstractions, models, enums, and primitives per Architecture §4 / §10 and Roadmap Phase 0 ACs.
+  Architecture.md References: §3.3 (tests/), §12 (MSTest 3.x, Moq 4.x)
+  Roadmap.md References: Phase 0 — Project Scaffold (Msg 6 — Test Skeletons + 5 Primitive Tests)
+  D1: header cites Architecture.md sections.
+-->
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <LangVersion>12.0</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <RootNamespace>TaskTree.Core.Tests</RootNamespace>
+    <AssemblyName>TaskTree.Core.Tests</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="MSTest.TestAdapter" Version="3.6.0" />
+    <PackageReference Include="MSTest.TestFramework" Version="3.6.0" />
+    <PackageReference Include="Moq" Version="4.20.72" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\TaskTree.Core\TaskTree.Core.csproj" />
+  </ItemGroup>
+
+</Project>

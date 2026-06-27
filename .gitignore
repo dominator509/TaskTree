@@ -1,0 +1,47 @@
+# Build output
+bin/
+obj/
+[Bb]uild/
+[Rr]elease/
+[Dd]ebug/
+artifacts/
+publish/
+app.publish/
+AppPackages/
+
+# Test and coverage output
+TestResults/
+coverage/
+coverage.*/
+coveragereport/
+*.coverage
+*.coveragexml
+
+# IDE and local workspace state
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Packages and generated binaries
+packages/
+.nuget/
+*.nupkg
+*.snupkg
+*.msix
+*.msixbundle
+*.appx
+*.appxbundle
+*.dll
+*.exe
+*.pdb
+
+# Local temp/log state
+.cache/
+.tmp/
+tmp/
+logs/
+*.log

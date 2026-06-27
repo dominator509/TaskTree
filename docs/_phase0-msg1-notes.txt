@@ -1,0 +1,3 @@
+TaskTree Phase 0 — Msg 1 (Solution + 11 source csproj).
+Test csproj (8 projects) ship in Msg 6 with an updated TaskTree.sln that adds them.
+Source: Roadmap.md Phase 0 → Chat Strategy. Architecture.md §3.3.
