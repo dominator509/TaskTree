@@ -42,7 +42,7 @@ namespace TaskTree.Modules.ReminderScheduler.Tests
             return (scheduler, clock, engine, compliance, logger);
         }
 
-        private static TaskNode MakeNode(Priority p, DateTimeOffset? deadline = null, TaskStatus status = TaskStatus.Open)
+        private static TaskNode MakeNode(Priority p, DateTimeOffset? deadline = null, TaskStatus status = TaskStatus.Active)
             => new()
             {
                 Id = Guid.NewGuid(),

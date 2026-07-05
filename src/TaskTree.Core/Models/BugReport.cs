@@ -1,3 +1,4 @@
+// SPEC-DERIVED-MSG3
 // SPEC-DERIVED-PHASE3D  HALT #1/#3
 // Architecture.md Section 9.2.1 bug report payload schema.
 // Gap #244/#246: verify schema compatibility and add exact JSON schema tests in Phase 5C.

@@ -17,7 +17,7 @@ namespace TaskTree.Modules.ReminderScheduler.Tests
     {
         private static readonly DateTimeOffset Now = new(2026, 6, 1, 12, 0, 0, TimeSpan.Zero);
 
-        private static TaskNode Node(Priority p, DateTimeOffset? deadline = null, TaskStatus status = TaskStatus.Open)
+        private static TaskNode Node(Priority p, DateTimeOffset? deadline = null, TaskStatus status = TaskStatus.Active)
             => new()
             {
                 Id = Guid.NewGuid(),

@@ -68,3 +68,39 @@ Follow-up gap:
 | #371 | Maintain complete compile-error register until Debug and Release builds pass | Phase 5B |
 | #373 | Compile errors must be categorized consistently | Phase 5B |
 | #384 | Actual compile closure requires Claude/Codex on stitched repo with real command outputs | Claude/Codex Phase 5B |
+
+## Register Entries
+
+### P5B-E001 - Marker Inventory Drift
+
+Error ID: P5B-E001
+Command: `rtk powershell -NoProfile -ExecutionPolicy Bypass -File tools/find-spec-derivations.ps1 -Root .`
+Configuration: N/A
+Project: N/A
+File: `tools/find-spec-derivations.ps1`
+Line: expected marker table
+Column: N/A
+Compiler error code: N/A
+Message: Initial marker verification failed with mismatched SPEC-DERIVED buckets and `Grand total: 184 expected 177`.
+Root cause category: Marker/verifier drift from stitched handoff deltas
+Proposed fix: Reconcile marker comments and script expectations against current canonical derived files.
+Status: Resolved
+Resolution reference: P5B-R001
+Follow-up gap: None.
+
+### P5B-E002 - .NET SDK Unavailable In Current Environment
+
+Error ID: P5B-E002
+Command: `rtk dotnet restore TaskTree.sln`; `rtk dotnet --info`
+Configuration: N/A
+Project: Solution
+File: N/A
+Line: N/A
+Column: N/A
+Compiler error code: N/A
+Message: `rtk: Failed to resolve 'dotnet' via PATH, falling back to direct exec: Binary 'dotnet' not found on PATH`
+Root cause category: Local environment/toolchain missing
+Proposed fix: Re-run Phase 5B restore/build commands in an environment with the .NET 8 SDK installed and available on PATH, or install/provision the SDK with owner approval.
+Status: Deferred
+Resolution reference: None in this environment.
+Follow-up gap: #384 remains open for actual Claude/Codex compile execution with real restore/build outputs.

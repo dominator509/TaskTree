@@ -1,3 +1,4 @@
+// SPEC-DERIVED-MSG3
 // SPEC-DERIVED-PHASE3A  HALT #1/#2/#3/#4/#5
 // Architecture.md Section 9.1.2 manifest schema; Section 9.1.3 signature/integrity.
 // Gap #209/#210/#211/#212: schema patch, nested DTO derivation, casing compatibility, version comparison deferred.

@@ -4,7 +4,7 @@
 //  Architecture.md References: §9.2.4, §9.2.1, §4.8
 //  Roadmap.md References: Phase 0 — Project Scaffold (Msg 4 — Enums)
 //  D1 anti-drift: header cites Architecture.md sections.
-//  D2 anti-drift: values match Architecture.md verbatim where specified (or SPEC-DERIVED-MSG4).
+//  D2 anti-drift: values match Architecture.md verbatim where specified.
 //  D10 anti-drift: XML doc on every public member.
 // ─────────────────────────────────────────────────────────────────────────────
 

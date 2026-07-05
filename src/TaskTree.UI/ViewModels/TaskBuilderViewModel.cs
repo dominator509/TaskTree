@@ -59,7 +59,7 @@ namespace TaskTree.UI.ViewModels
                     Id = Guid.NewGuid(),
                     Title = Title.Trim(),
                     Priority = Priority,
-                    Status = TaskStatus.Open,
+                    Status = TaskStatus.Active,
                     Deadline = Deadline,
                     CreatedAt = _clock.UtcNow,
                     ModifiedAt = _clock.UtcNow,

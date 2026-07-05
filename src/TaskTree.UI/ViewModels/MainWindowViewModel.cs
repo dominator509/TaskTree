@@ -75,7 +75,7 @@ namespace TaskTree.UI.ViewModels
             try
             {
                 IsBusy = true;
-                var node = new TaskNode { Id = Guid.NewGuid(), Title = trimmed, Priority = Priority.Normal, Status = TaskStatus.Open, Deadline = null, CreatedAt = _clock.UtcNow, ModifiedAt = _clock.UtcNow };
+                var node = new TaskNode { Id = Guid.NewGuid(), Title = trimmed, Priority = Priority.Normal, Status = TaskStatus.Active, Deadline = null, CreatedAt = _clock.UtcNow, ModifiedAt = _clock.UtcNow };
                 await _taskEngine.AddAsync(node);
                 Tasks.Add(node);
                 NewTaskTitle = string.Empty;

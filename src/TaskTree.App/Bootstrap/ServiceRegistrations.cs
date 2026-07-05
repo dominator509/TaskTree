@@ -1,7 +1,5 @@
 // SPEC-DERIVED-PHASE1F
 // SPEC-DERIVED-PHASE1G-MSG2
-// SPEC-DERIVED-PHASE2A
-// SPEC-DERIVED-PHASE2E
 // SPEC-DERIVED-PHASE2F
 // SPEC-DERIVED-PHASE2G  HALT #21 SnoozeService registration
 
@@ -29,11 +27,11 @@ namespace TaskTree.App.Bootstrap
             services.AddSingleton<IClock, Clock>(); services.AddSingleton<ICryptoProvider, AesGcmCryptoProvider>(); services.AddSingleton<IAppLogger>(sp=>new FileAppLogger(CompositionRoot.GetLogDirectory()));
             services.AddSingleton<IMasterKeyManager>(sp=>new MasterKeyManager(CompositionRoot.GetKeyDirectory(),sp.GetRequiredService<IAppLogger>(),"master.bin"));
             services.AddSingleton<ISecureStore>(sp=>new SecureStore(CompositionRoot.GetStorageDirectory(),sp.GetRequiredService<IMasterKeyManager>(),sp.GetRequiredService<ICryptoProvider>(),sp.GetRequiredService<IAppLogger>()));
-            services.AddSingleton<IComplianceCore>(sp=>{var logger=sp.GetRequiredService<IAppLogger>();var writer=new AuditChainWriter(sp.GetRequiredService<ISecureStore>(),sp.GetRequiredService<ICryptoProvider>());return new ComplianceCore(writer,new PhiRedactor(Array.Empty<string>()),sp.GetRequiredService<IClock>(),logger,sp.GetRequiredService<ISecureStore>());});
+            services.AddSingleton<IComplianceCore>(sp=>{var logger=sp.GetRequiredService<IAppLogger>();var writer=new AuditChainWriter(sp.GetRequiredService<ISecureStore>(),sp.GetRequiredService<IClock>(),logger);return new ComplianceCore(sp.GetRequiredService<ISecureStore>(),sp.GetRequiredService<IClock>(),logger,new PhiRedactor(Array.Empty<string>()),writer);});
             services.AddSingleton<ISnoozeService>(sp=>new SnoozeService(sp.GetRequiredService<ISecureStore>(),sp.GetRequiredService<IComplianceCore>(),sp.GetRequiredService<IClock>(),sp.GetRequiredService<IAppLogger>()));
             services.AddSingleton<ISettingsService>(sp=>new SettingsService(sp.GetRequiredService<ISecureStore>(),sp.GetRequiredService<IComplianceCore>(),sp.GetRequiredService<IClock>(),sp.GetRequiredService<IAppLogger>()));
             services.AddSingleton<ISessionLockService>(sp=>new SessionLockService(sp.GetRequiredService<IClock>(),sp.GetRequiredService<IComplianceCore>(),sp.GetRequiredService<IAppLogger>()));
-            services.AddSingleton<ITaskEngine>(sp=>new TaskEngine(sp.GetRequiredService<ISecureStore>(),sp.GetRequiredService<IComplianceCore>(),sp.GetRequiredService<IClock>(),sp.GetRequiredService<IAppLogger>()));
+            services.AddSingleton<ITaskEngine>(sp=>new TaskEngine(sp.GetRequiredService<ISecureStore>(),sp.GetRequiredService<IClock>(),sp.GetRequiredService<IAppLogger>(),sp.GetRequiredService<IComplianceCore>()));
             services.AddSingleton<IReminderScheduler>(sp=>new ReminderScheduler(sp.GetRequiredService<IClock>(),sp.GetRequiredService<ITaskEngine>(),sp.GetRequiredService<IComplianceCore>(),sp.GetRequiredService<IAppLogger>()));
             services.AddSingleton<ITrayHost>(sp=>new TrayHost(sp.GetRequiredService<IAppLogger>(),sp.GetRequiredService<IComplianceCore>()));
             services.AddSingleton<ToastTier1Adapter>(sp=>new ToastTier1Adapter(sp.GetRequiredService<IAppLogger>()));

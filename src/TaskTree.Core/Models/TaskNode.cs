@@ -1,4 +1,4 @@
-// SPEC-DERIVED-PHASE1A  TaskNode baseline
+// SPEC-DERIVED-MSG3  TaskNode baseline
 // SPEC-DERIVED-PHASE2C  HALT #1/#8 (TaskMetadata? Metadata additive model patch)
 // Gap #127/#131: Phase 5B/5C must verify serialization compatibility and downstream tests.
 
@@ -12,9 +12,10 @@ namespace TaskTree.Core.Models
     public sealed class TaskNode
     {
         public Guid Id { get; set; }
+        public Guid? ParentId { get; set; }
         public string Title { get; set; } = string.Empty;
         public Priority Priority { get; set; } = Priority.Normal;
-        public TaskStatus Status { get; set; } = TaskStatus.Open;
+        public TaskStatus Status { get; set; } = TaskStatus.Active;
         public DateTimeOffset? Deadline { get; set; }
         public DateTimeOffset CreatedAt { get; set; }
         public DateTimeOffset ModifiedAt { get; set; }

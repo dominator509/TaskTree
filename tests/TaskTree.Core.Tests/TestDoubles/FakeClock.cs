@@ -7,8 +7,7 @@
 //   3. AuditChainWriterTests     (Phase 1C)
 //   4. ReminderSchedulerTests    (Phase 1D Msg 2 — pending)
 // ----------------------------------------------------------------------------
-// SPEC-DERIVED-PHASE1D
-//   HALT #1 — Option A (promote into existing TaskTree.Core.Tests project)
+// Phase 1D HALT #1 — Option A (promote into existing TaskTree.Core.Tests project)
 // Option B (new TaskTree.TestSupport project) re-evaluated on 5th consumer.
 // See PHASE1D-DERIVATIONS.md §21 and HANDOFF v1.0.16 Cross-Phase Gap #40.
 // ============================================================================

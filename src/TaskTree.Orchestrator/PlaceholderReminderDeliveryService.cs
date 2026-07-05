@@ -6,6 +6,7 @@
 // REPLACED by Phase 1G ReminderDeliveryService router (Tier 1/2/3 decision tree).
 // =============================================================================
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using TaskTree.Core.Abstractions;
 using TaskTree.Core.Models;
@@ -21,14 +22,18 @@ internal sealed class PlaceholderReminderDeliveryService : IReminderDeliveryServ
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
+    public Task StartAsync(CancellationToken ct) => Task.CompletedTask;
+
+    public Task StopAsync() => Task.CompletedTask;
+
     public Task DeliverAsync(ReminderEvent reminder)
     {
         if (reminder is null) return Task.CompletedTask;
         try
         {
             _logger.LogInformation(
-                "[Placeholder] ReminderDue: NodeId={NodeId} Priority={Priority} Reason={Reason} FiredAt={FiredAt}",
-                reminder.NodeId, reminder.Priority, reminder.Reason, reminder.FiredAt);
+                "[Placeholder] ReminderDue: TaskId={TaskId} Priority={Priority} Reason={Reason} FiredAtUtc={FiredAtUtc}",
+                reminder.TaskId, reminder.Priority, reminder.Reason, reminder.FiredAtUtc);
         }
         catch
         {

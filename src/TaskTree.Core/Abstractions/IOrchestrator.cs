@@ -2,6 +2,7 @@
 // File: src/TaskTree.Core/Abstractions/IOrchestrator.cs
 // Architecture §3.2 dependency graph; §3.3 Abstractions folder
 // ----------------------------------------------------------------------------
+// SPEC-DERIVED-MSG2
 // SPEC-DERIVED-PHASE1F
 //   HALT #1  Finalize 2-method surface (StartAsync + StopAsync) — Phase 0 stub was empty
 //   HALT #16 Architecture v1.0.2 amendment formalizes §4 IOrchestrator prose (Gap #63)
