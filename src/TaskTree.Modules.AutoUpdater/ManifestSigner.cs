@@ -13,12 +13,24 @@ namespace TaskTree.Modules.AutoUpdater
     public sealed class ManifestSigner
     {
         internal const string EmbeddedPublicKeyBase64 = "PHASE3A_DEV_PUBLIC_KEY_PLACEHOLDER";
+        private readonly string _publicKeyBase64;
 
         private static readonly JsonSerializerOptions CanonicalOptions = new()
         {
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
             WriteIndented = false,
         };
+
+        public ManifestSigner() : this(EmbeddedPublicKeyBase64)
+        {
+        }
+
+        public ManifestSigner(string publicKeyBase64)
+        {
+            _publicKeyBase64 = string.IsNullOrWhiteSpace(publicKeyBase64)
+                ? throw new ArgumentException("Public key is required.", nameof(publicKeyBase64))
+                : publicKeyBase64;
+        }
 
         /// <summary>Builds canonical UTF-8 JSON payload excluding the manifest signature object.</summary>
         public byte[] BuildCanonicalSigningPayload(UpdateManifest manifest)
@@ -46,7 +58,7 @@ namespace TaskTree.Modules.AutoUpdater
 
             try
             {
-                var publicKeyBytes = Convert.FromBase64String(EmbeddedPublicKeyBase64);
+                var publicKeyBytes = Convert.FromBase64String(_publicKeyBase64);
                 var signatureBytes = Convert.FromBase64String(manifest.Signature.Value);
                 var algorithm = SignatureAlgorithm.Ed25519;
                 using var publicKey = PublicKey.Import(algorithm, publicKeyBytes, KeyBlobFormat.RawPublicKey);

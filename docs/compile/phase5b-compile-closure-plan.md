@@ -40,8 +40,8 @@ dotnet build TaskTree.sln -c Release
 | Restore | Deferred | `rtk dotnet restore TaskTree.sln` fails locally because `dotnet` is unavailable on PATH (`P5B-E002`). |
 | Debug build | Blocked by restore/toolchain | Requires .NET SDK. |
 | Release build | Blocked by restore/toolchain | Requires .NET SDK; also gates Tier 2 obsolete window deletion. |
-| Compile-error register | Populated/current | Entries `P5B-E001` through `P5B-E016`; `P5B-E002` and `P5B-E011` remain deferred. |
-| Compile-resolution log | Populated/current | Resolutions through `P5B-R014`; all applied static fixes are logged. |
+| Compile-error register | Populated/current | Entries `P5B-E001` through `P5B-E020`; `P5B-E002` and `P5B-E011` remain deferred. |
+| Compile-resolution log | Populated/current | Resolutions through `P5B-R018`; all applied static fixes are logged. |
 | Phase 5C handoff | Not ready | Phase 5C requires successful restore, Debug build, and Release build first. |
 
 ## Constructor Churn Reconciliation
@@ -122,10 +122,11 @@ Phase 5B is complete only when:
 | Gap | Description | Target |
 |---|---|---|
 | #367 | Compile fixes must not redesign features or expand scope beyond buildability | Preserved; static fixes only |
-| #375 | Constructor churn must be reconciled without changing runtime behavior | Partially applied statically; build proof deferred |
+| #375 | Constructor churn must be reconciled without changing runtime behavior | Further applied via orchestrator and E2E offline test backfills; build proof deferred |
 | #376 | DI registrations must be reconciled and unresolved runtime graph gaps documented | Partially applied via `TaskTreePaths`; build proof deferred |
 | #378 | Duplicate/conflicting models/enums must be resolved with selected source and compatibility rationale | Partially applied via model/enum static audits and TestSupport duplicate deletion |
-| #379 | Interface/implementation drift must be closed systematically and recorded | Partially applied via `IAppLogger` and related interface audits |
+| #379 | Interface/implementation drift must be closed systematically and recorded | Further applied via reminder delivery snooze test backfill; build proof deferred |
+| #221 | Positive offline import requires a safe Ed25519 test-key seam without adding a production key | Applied via `ManifestSigner` public-key override and signed-bundle test; build proof deferred |
 | #382 | TestSupport fakes must be reconciled with final interfaces and constructors | Further reconciled via shared TestSupport consumer migration; compile proof deferred |
 | #384 | Actual compile closure requires Claude/Codex on stitched repo with real command outputs | Still open; restore/build blocked by missing .NET SDK |
 | #319 | Final `.wapproj` project references must be reconciled against stitched repo projects | Applied statically; MSIX tooling proof deferred to Phase 5E |

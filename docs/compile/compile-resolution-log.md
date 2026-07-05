@@ -367,3 +367,97 @@ Tests/build commands re-run:
 Command output reference: Static grep should show all three newer interfaces covered; real test execution remains unavailable without the .NET SDK.
 Follow-up gap created/updated: `P5B-E002` remains the restore/build/test environment blocker.
 Reviewer/owner note: Re-run `dotnet test` in an SDK environment before Phase 5B sign-off.
+
+### P5B-R015 - Orchestrator Offline Test Backfill
+
+Resolution ID: P5B-R015
+Related compile error ID(s): P5B-E017
+File(s) changed:
+- `tests/TaskTree.Orchestrator.Tests/OrchestratorTests.cs`
+- `docs/compile/compile-error-register.md`
+- `docs/compile/compile-resolution-log.md`
+- `docs/compile/phase5b-compile-closure-plan.md`
+Change summary: Replaced the Phase 1H Gap #95 inconclusive orchestrator placeholder with offline tests covering constructor null guardrails, startup lifecycle calls, shutdown lifecycle calls, event unsubscription, and startup/shutdown audit entries.
+Exact rationale: The current production `Orchestrator` constructor and dependency graph are stable enough for offline tests, and leaving the placeholder in place would keep a generated test artifact from exercising the reconciled constructor/DI surface.
+Why this is compile-closure only: The edit changes only test code and compile audit docs. It does not change production orchestration behavior, service registrations, live Windows integrations, PHI/audit policy, or external adapters.
+Why runtime behavior is unchanged or minimally changed: Production code is untouched. The tests observe existing calls using Moq and existing `TaskTree.TestSupport.FakeClock`.
+Regression risk: Low to medium; strict test mocks may expose future lifecycle drift, which is intended for Phase 5B/5C verification.
+Tests/build commands re-run:
+- `rtk rg -n Placeholder tests\TaskTree.Orchestrator.Tests\OrchestratorTests.cs`
+- `rtk rg -n Constructor_NullDependencies tests\TaskTree.Orchestrator.Tests\OrchestratorTests.cs`
+- `rtk rg -n StartAsync_StartsDependencies tests\TaskTree.Orchestrator.Tests\OrchestratorTests.cs`
+- `rtk rg -n StopAsync_AfterStart tests\TaskTree.Orchestrator.Tests\OrchestratorTests.cs`
+- `rtk git diff --check`
+Command output reference: Static grep should show the placeholder removed and the three offline tests present. Real `dotnet test` execution remains unavailable locally because no .NET SDK is available on PATH.
+Follow-up gap created/updated: `P5B-E002` remains the restore/build/test environment blocker; broader Phase 1H E2E backfill continued in `P5B-R016`.
+Reviewer/owner note: Re-run SDK-backed tests before Phase 5B/5C sign-off.
+
+### P5B-R016 - EndToEnd Offline Provider Backfill
+
+Resolution ID: P5B-R016
+Related compile error ID(s): P5B-E018
+File(s) changed:
+- `tests/TaskTree.Orchestrator.Tests/EndToEndOfflineTests.cs`
+- `docs/compile/compile-error-register.md`
+- `docs/compile/compile-resolution-log.md`
+- `docs/compile/phase5b-compile-closure-plan.md`
+Change summary: Replaced the Phase 1H Gap #95 E2E placeholder with offline provider tests for graph resolution, task persistence with audit-chain integrity, and Orchestrator start/stop lifecycle through mocked live integration boundaries.
+Exact rationale: `docs/spec-derivations/PHASE1H-DERIVATIONS.md` explicitly identifies `EndToEndOfflineTests.cs` as an 8-test skeleton for Phase 5C implementation. The current constructor graph supports a smaller verified offline provider seam without changing production code.
+Why this is compile-closure only: The edit changes only test code and compile audit docs. It does not alter production DI registrations, runtime services, live tray/toast behavior, storage encryption, PHI redaction, or external adapters.
+Why runtime behavior is unchanged or minimally changed: Production code is untouched. The test provider uses existing real module implementations where safe and Moq boundaries for live tray/session/settings/snooze integrations.
+Regression risk: Medium; DI-style tests are sensitive to constructor churn, which is exactly the drift they are intended to expose during Phase 5B/5C.
+Tests/build commands re-run:
+- `rtk rg -n Placeholder tests\TaskTree.Orchestrator.Tests\EndToEndOfflineTests.cs`
+- `rtk rg -n OfflineProvider tests\TaskTree.Orchestrator.Tests\EndToEndOfflineTests.cs`
+- `rtk rg -n BuildOfflineProvider tests\TaskTree.Orchestrator.Tests\EndToEndOfflineTests.cs`
+- `rtk git diff --check`
+Command output reference: Static grep should show the placeholder removed and the offline provider helper/tests present. Real `dotnet test` execution remains unavailable locally because no .NET SDK is available on PATH.
+Follow-up gap created/updated: `P5B-E002` remains the restore/build/test environment blocker; live integration proof remains Phase 5E-owned.
+Reviewer/owner note: Re-run SDK-backed tests before Phase 5B/5C sign-off.
+
+### P5B-R017 - ReminderDelivery Snooze Skip Test Backfill
+
+Resolution ID: P5B-R017
+Related compile error ID(s): P5B-E019
+File(s) changed:
+- `tests/TaskTree.Orchestrator.Tests/ReminderDeliveryServiceTests.cs`
+- `docs/compile/compile-error-register.md`
+- `docs/compile/compile-resolution-log.md`
+- `docs/compile/phase5b-compile-closure-plan.md`
+Change summary: Replaced the Phase 2G Gap #193 inconclusive skeleton with an offline event-driven test for the snoozed reminder skip path.
+Exact rationale: `ReminderDeliveryService` now has a concrete snooze check before the tier cascade. The test can verify this behavior without live toast/tray APIs by raising `IReminderScheduler.ReminderDue`, returning an active `SnoozeState`, and observing the `DeliverySkippedSnoozed` audit entry.
+Why this is compile-closure only: The edit changes only test code and compile audit docs. It does not change production reminder delivery behavior, tier adapters, snooze behavior, audit vocabulary, or live Windows integrations.
+Why runtime behavior is unchanged or minimally changed: Production code is untouched. The test exercises existing behavior through mocks and concrete adapters that are bypassed by the snooze short-circuit.
+Regression risk: Low to medium; async event-handler tests can be timing-sensitive, mitigated here with a `TaskCompletionSource` tied to the audit call rather than fixed sleep.
+Tests/build commands re-run:
+- `rtk rg -n Inconclusive tests\TaskTree.Orchestrator.Tests`
+- `rtk rg -n SKELETON tests\TaskTree.Orchestrator.Tests`
+- `rtk git diff --check`
+Command output reference: Static grep should show no remaining inconclusive/skeleton tests under `tests\TaskTree.Orchestrator.Tests`. Real `dotnet test` execution remains unavailable locally because no .NET SDK is available on PATH.
+Follow-up gap created/updated: `P5B-E002` remains the restore/build/test environment blocker; live tier delivery proof remains Phase 5E-owned.
+Reviewer/owner note: Re-run SDK-backed tests before Phase 5B/5C sign-off.
+
+### P5B-R018 - Offline Import Valid Bundle Test Backfill
+
+Resolution ID: P5B-R018
+Related compile error ID(s): P5B-E020
+File(s) changed:
+- `src/TaskTree.Modules.AutoUpdater/ManifestSigner.cs`
+- `tests/TaskTree.Modules.AutoUpdater.Tests/OfflineImportServiceTests.cs`
+- `tests/TaskTree.Modules.AutoUpdater.Tests/ManifestSignerTests.cs`
+- `tests/TaskTree.Modules.AutoUpdater.Tests/Phase3IntegrationTests.cs`
+- `docs/compile/compile-error-register.md`
+- `docs/compile/compile-resolution-log.md`
+- `docs/compile/phase5b-compile-closure-plan.md`
+Change summary: Added a backward-compatible public-key override constructor to `ManifestSigner` and replaced the inconclusive positive offline-import test with a fixed Ed25519 vector test that verifies staged package bytes.
+Exact rationale: The production embedded public key is intentionally an owner-owned placeholder, but tests need a safe key seam to prove the signature/hash/staging path. The new constructor keeps default production behavior unchanged while allowing tests to supply a deterministic Ed25519 public key for a fixed test vector.
+Why this is compile-closure only: The change is a testability seam plus test backfill for an already-approved Ed25519 verification path. It does not add a production key, fake signature success, bypass hash verification, change staging behavior, or introduce any package dependency.
+Why runtime behavior is unchanged or minimally changed: `new ManifestSigner()` still uses the existing embedded placeholder key. Only callers that explicitly pass a public key use the override.
+Regression risk: Medium; the positive test depends on the manifest canonical JSON remaining stable and must be verified in an SDK environment.
+Tests/build commands re-run:
+- `rtk rg -n Inconclusive tests docs\compile`
+- `rtk rg -n ImportAsync_ValidBundle tests\TaskTree.Modules.AutoUpdater.Tests\OfflineImportServiceTests.cs`
+- `rtk git diff --check`
+Command output reference: Static grep should show the updater inconclusive removed and the positive test present. Real `dotnet test` execution remains unavailable locally because no .NET SDK is available on PATH.
+Follow-up gap created/updated: `P5B-E002` remains the restore/build/test environment blocker; real production signing key remains Phase 5F/release owner input.
+Reviewer/owner note: Re-run SDK-backed AutoUpdater tests before Phase 5B/5C sign-off.

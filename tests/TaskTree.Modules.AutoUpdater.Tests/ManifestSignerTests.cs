@@ -1,5 +1,5 @@
 // SPEC-DERIVED-PHASE3A  HALT #20
-// Gap #221: Valid Ed25519 positive test vector still required if placeholder key remains.
+// Gap #221: positive vector coverage lives in OfflineImportServiceTests; production key remains owner-owned.
 
 using System;
 using Microsoft.VisualStudio.TestTools.UnitTesting;

@@ -1,6 +1,6 @@
 // SPEC-DERIVED-PHASE3F  HALT #4/#5/#6/#7/#8/#18
 // Roadmap Phase 3F; Architecture.md Section 9.1 AutoUpdater offline integration gate.
-// Gap #214/#221 retained: positive Ed25519 verification awaits real key/test vector.
+// Gap #214 retained: production Ed25519 key remains owner-owned; fixed-vector coverage lives in OfflineImportServiceTests.
 // Gap #279: Phase 5E must replace no-op/stub updater operations with live HTTP/MSIX flow.
 
 using System;

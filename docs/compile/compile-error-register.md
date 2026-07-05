@@ -342,3 +342,71 @@ Proposed fix: Assert that `ISettingsService`, `ISessionLockService`, and `ISnooz
 Status: Resolved
 Resolution reference: P5B-R014
 Follow-up gap: Build/test execution remains deferred until a .NET SDK is available.
+
+### P5B-E017 - Orchestrator Placeholder Test Drift
+
+Error ID: P5B-E017
+Command: Static Phase 1H/5B test audit via `rtk rg -n Placeholder tests\TaskTree.Orchestrator.Tests` and source inspection
+Configuration: Debug / Release
+Project: `TaskTree.Orchestrator.Tests`
+File: `tests/TaskTree.Orchestrator.Tests/OrchestratorTests.cs`
+Line: `Placeholder_PendingCodexBackfill`
+Column: N/A
+Compiler error code: N/A
+Message: `OrchestratorTests` still contained the Phase 1H Gap #95 inconclusive placeholder after the production `Orchestrator` constructor and lifecycle dependencies had stabilized to the current TaskEngine, ReminderScheduler, ComplianceCore, TrayHost, ReminderDelivery, Settings, SessionLock, logger, and clock graph.
+Root cause category: Constructor signature drift / test coverage drift
+Proposed fix: Replace the inconclusive placeholder with offline tests for constructor null guardrails, startup dependency calls, shutdown dependency calls, event unsubscription, and startup/shutdown audit entries using existing Moq and `TaskTree.TestSupport` helpers.
+Status: Resolved
+Resolution reference: P5B-R015
+Follow-up gap: Test execution remains deferred until a .NET SDK is available; broader Phase 1H end-to-end placeholder coverage remains separate in `EndToEndOfflineTests.cs`.
+
+### P5B-E018 - EndToEnd Offline Placeholder Test Drift
+
+Error ID: P5B-E018
+Command: Static Phase 1H/5B E2E audit via `rtk rg -n Placeholder tests\TaskTree.Orchestrator.Tests` and `docs/spec-derivations/PHASE1H-DERIVATIONS.md`
+Configuration: Debug / Release
+Project: `TaskTree.Orchestrator.Tests`
+File: `tests/TaskTree.Orchestrator.Tests/EndToEndOfflineTests.cs`
+Line: `Placeholder_PendingCodexBackfill`
+Column: N/A
+Compiler error code: N/A
+Message: `EndToEndOfflineTests` still contained the Phase 1H Gap #95 inconclusive placeholder even though the current offline constructor graph can be built with real in-memory Core, ComplianceCore, TaskEngine, ReminderScheduler, ReminderDeliveryService, and mocked live integration boundaries.
+Root cause category: Test coverage drift / constructor signature drift
+Proposed fix: Replace the placeholder with offline provider tests that resolve the core runtime graph, verify TaskEngine persistence plus audit-chain integrity, and start/stop the Orchestrator through the offline graph without invoking live tray/toast/provider behavior.
+Status: Resolved
+Resolution reference: P5B-R016
+Follow-up gap: Test execution remains deferred until a .NET SDK is available; live tray/toast/MSIX/provider paths remain Phase 5E-owned.
+
+### P5B-E019 - ReminderDelivery Snooze Skeleton Drift
+
+Error ID: P5B-E019
+Command: Static orchestrator-test audit via `rtk rg -n Inconclusive tests\TaskTree.Orchestrator.Tests` and `rtk rg -n SKELETON tests\TaskTree.Orchestrator.Tests`
+Configuration: Debug / Release
+Project: `TaskTree.Orchestrator.Tests`
+File: `tests/TaskTree.Orchestrator.Tests/ReminderDeliveryServiceTests.cs`
+Line: `OnReminderDue_WhenSnoozed_SkipsTierCascade_AuditsDeliverySkippedSnoozed_SKELETON`
+Column: N/A
+Compiler error code: N/A
+Message: The Phase 2G Gap #193 reminder delivery test remained an inconclusive skeleton even though the current `ReminderDeliveryService` constructor and snooze skip behavior are concrete enough for an offline event-driven test.
+Root cause category: Test coverage drift / interface contract drift
+Proposed fix: Replace the inconclusive skeleton with a real offline test that starts `ReminderDeliveryService`, raises `IReminderScheduler.ReminderDue`, returns an active snooze from `ISnoozeService`, and verifies `DeliverySkippedSnoozed` audit output without invoking live toast/tray behavior.
+Status: Resolved
+Resolution reference: P5B-R017
+Follow-up gap: Test execution remains deferred until a .NET SDK is available; live tier delivery behavior remains Phase 5E-owned.
+
+### P5B-E020 - Offline Import Positive Test Key Drift
+
+Error ID: P5B-E020
+Command: Static updater-test audit via `rtk rg -n Inconclusive tests docs\compile` and source inspection
+Configuration: Debug / Release
+Project: `TaskTree.Modules.AutoUpdater.Tests`; `TaskTree.Modules.AutoUpdater`
+File: `tests/TaskTree.Modules.AutoUpdater.Tests/OfflineImportServiceTests.cs`; `src/TaskTree.Modules.AutoUpdater/ManifestSigner.cs`
+Line: `ImportAsync_ValidBundle_StagesPackage_PENDING_KEY`; `ManifestSigner.EmbeddedPublicKeyBase64`
+Column: N/A
+Compiler error code: N/A
+Message: The positive offline-import test remained inconclusive because `ManifestSigner` only verified against the owner-owned embedded production-key placeholder, leaving no safe test key seam for a valid Ed25519 bundle.
+Root cause category: Test coverage drift / constructor signature drift
+Proposed fix: Preserve the default embedded-key path while adding a public-key override constructor for tests, then use a fixed Ed25519 public key/signature vector for the manifest canonical payload, import the ZIP bundle, and verify the staged MSIX bytes.
+Status: Resolved
+Resolution reference: P5B-R018
+Follow-up gap: Test execution remains deferred until a .NET SDK is available; the real production signing public key remains owner-owned for Phase 5F/release.
