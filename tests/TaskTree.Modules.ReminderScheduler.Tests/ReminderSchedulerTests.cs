@@ -16,7 +16,7 @@ using Moq;
 using TaskTree.Core.Abstractions;
 using TaskTree.Core.Enums;
 using TaskTree.Core.Models;
-using TaskTree.Core.Tests.TestDoubles;
+using TaskTree.TestSupport;
 
 namespace TaskTree.Modules.ReminderScheduler.Tests
 {

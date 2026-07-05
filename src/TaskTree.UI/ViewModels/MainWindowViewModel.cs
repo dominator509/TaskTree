@@ -62,7 +62,7 @@ namespace TaskTree.UI.ViewModels
                 if (tree is not null) foreach (var node in tree) if (node is not null) Tasks.Add(node);
                 StatusMessage = $"Loaded {Tasks.Count} tasks";
             }
-            catch (Exception ex) { _logger.LogError($"RefreshAsync failed: {ex.GetType().Name}: {ex.Message}"); StatusMessage = "Refresh failed - see log"; }
+            catch (Exception ex) { _logger.LogError(ex, "RefreshAsync failed: {0}: {1}", ex.GetType().Name, ex.Message); StatusMessage = "Refresh failed - see log"; }
             finally { IsBusy = false; }
         }
 
@@ -81,7 +81,7 @@ namespace TaskTree.UI.ViewModels
                 NewTaskTitle = string.Empty;
                 StatusMessage = "Task added";
             }
-            catch (Exception ex) { _logger.LogError($"QuickAddAsync failed: {ex.GetType().Name}: {ex.Message}"); StatusMessage = "Add failed - see log"; }
+            catch (Exception ex) { _logger.LogError(ex, "QuickAddAsync failed: {0}: {1}", ex.GetType().Name, ex.Message); StatusMessage = "Add failed - see log"; }
             finally { IsBusy = false; }
         }
     }

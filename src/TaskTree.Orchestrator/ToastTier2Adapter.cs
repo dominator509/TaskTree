@@ -49,14 +49,14 @@ namespace TaskTree.Orchestrator
             _closeTimer.Tick += OnCloseTimerTick;
             _closeTimer.Stop(); _closeTimer.Start();
             try { if (!_window.IsVisible) _window.Show(); else _window.Visibility = Visibility.Visible; return true; }
-            catch (Exception ex) { _logger.LogError($"Tier2 WPF toast failed: {ex.GetType().Name}: {ex.Message}"); return false; }
+            catch (Exception ex) { _logger.LogError(ex, "Tier2 WPF toast failed: {0}: {1}", ex.GetType().Name, ex.Message); return false; }
         }
 
         private void OnSessionLockChanged(object? sender, SessionLockChangedEventArgs e)
         {
             if (!e.IsLocked) return;
             try { _closeTimer?.Stop(); _window?.Hide(); }
-            catch (Exception ex) { _logger.LogError($"Tier2 hide-on-lock failed: {ex.GetType().Name}: {ex.Message}"); }
+            catch (Exception ex) { _logger.LogError(ex, "Tier2 hide-on-lock failed: {0}: {1}", ex.GetType().Name, ex.Message); }
         }
 
         private void OnCloseTimerTick(object? sender, EventArgs e)

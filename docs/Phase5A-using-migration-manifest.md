@@ -1,6 +1,6 @@
 # Phase 5A Using-Statement Migration Manifest (Gap #106 + Gap #112 closure)
 
-> **Status:** NOT YET APPLIED - Codex/Claude Code Phase 5A action.
+> **Status:** APPLIED in stitched repo by Codex during Phase 5B compile/stitching closure.
 > **Trigger:** Phase 2A Msg 1 promoted FakeClock + InMemorySecureStore to TaskTree.TestSupport project per Gap #97/#98.
 > **Author:** DSW - **Date:** 2026-05-29
 
@@ -27,8 +27,8 @@ Gap #106 originally estimated 4 affected files. **Gap #112 revises count to 8** 
 
 After migration is complete, delete the following obsolete files:
 
-- `tests/TaskTree.Core.Tests/TestDoubles/FakeClock.cs` - DELETE
-- `tests/TaskTree.Core.Tests/TestDoubles/InMemorySecureStore.cs` - DELETE
+- `tests/TaskTree.Core.Tests/TestDoubles/FakeClock.cs` - DELETED
+- `tests/TaskTree.Core.Tests/TestDoubles/InMemorySecureStore.cs` - DELETED
 - Optionally delete entire `tests/TaskTree.Core.Tests/TestDoubles/` directory if empty after the two file deletions
 
 **Verification:** `grep -r FakeClock tests/TaskTree.Core.Tests/` must return zero matches.
@@ -57,3 +57,9 @@ Phase 5A action sequence (run from repo root):
 2. If Codex finds additional consumers of `TaskTree.Core.Tests.TestDoubles` beyond this 8-file list (e.g., PhiRedactorTests.cs if updated during Phase 1C work not captured in derivations), Codex MUST add them to migration scope and log as **Gap #115**.
 3. Migration is purely text-substitution; no behavioral changes expected.
 4. If old-location deletion leaves `TestDoubles/` folder empty, Phase 5A may also delete the empty folder for cleanliness.
+
+## Section 7 Codex Application Notes
+
+- Remaining old namespace consumer found in `tests/TaskTree.Modules.ReminderScheduler.Tests/ReminderSchedulerTests.cs` and migrated to `TaskTree.TestSupport`.
+- Obsolete old-location files were deleted after confirming `tests/TaskTree.TestSupport/` contains the promoted replacements and dependent test projects already reference `TaskTree.TestSupport`.
+- Build/test verification is still pending a local .NET SDK; see `docs/compile/compile-error-register.md` entry `P5B-E002`.

@@ -1,3 +1,4 @@
+// SPEC-DERIVED-PHASE1H HALT #5 (Gap #98 - promoted test double)
 // SPEC-DERIVED-PHASE2A HALT #7 (Gap #98 - Option B promotion)
 // Relocated from tests/TaskTree.Core.Tests/TestDoubles/InMemorySecureStore.cs.
 // Phase 5A MUST delete the old location (Gap #104).

@@ -1,4 +1,4 @@
-// SPEC-DERIVED-PHASE2B  HALT #11/#12 (Gap #80 closure - replaces Phase 1G ToastTier2Window)
+// SPEC-DERIVED-PHASE2B  HALT #11/#12 (Gap #80 closure - replaces Phase 1G Tier 2 WPF window)
 
 using System;
 using System.Windows;

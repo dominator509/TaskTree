@@ -1,6 +1,7 @@
 # bundle-inventory.md - Phase 5A Bundle Inventory
 
-> Phase 5A Repo Stitching / Bundle Application. Status: stitching plan artifact. The actual repository becomes authoritative only after Claude/Codex applies and verifies all bundles.
+> Phase 5A Repo Stitching / Bundle Application.
+> Status: current stitched repository is authoritative; original bundle filenames are not present in this checkout.
 
 ## Application Order
 
@@ -45,28 +46,41 @@ Phase 4D
 Phase 5A
 ```
 
-## Inventory Columns for Claude/Codex
+## Current Repo Evidence
 
-For each actual bundle file, record:
+The checkout contains stitched outputs and phase evidence, not the original external bundle files. Current evidence includes:
 
-- Bundle filename
-- Phase
-- Expected file count
-- Expected marker count
-- Status: Applied / Missing / Superseded / Needs Review
-- Collision notes
-- Selected source if regenerated
+- authority docs: `Architecture.md`, `Roadmap.md`, `docs/HANDOFF*.md`
+- derivation registries: `docs/spec-derivations/PHASE0-MSG2` through `PHASE3E`
+- phase summaries/manifests: Phase 1H, Phase 2D, Phase 3, Phase 4, and Phase 5A manifests
+- stitching artifacts: `docs/stitching/*.md`
+- compile closure artifacts: `docs/compile/*.md`
+- source/test project inventory: see `docs/stitching/stitched-file-manifest.md`
+- marker verifier: `tools/find-spec-derivations.ps1`, currently green at `Grand total: 179 expected 179`
+
+## Inventory Boundary
+
+| Item | Current status | Evidence / note |
+|---|---|---|
+| Exact original bundle filenames | Unavailable in checkout | Do not invent filenames; use current repo files as source of truth. |
+| Bundle application order | Preserved as planned order | See Application Order above and `docs/HANDOFF-v1.0.46-delta.md`. |
+| Stitched file inventory | Applied | See `docs/stitching/stitched-file-manifest.md`. |
+| Collision register | Partially applied | TestSupport duplicate and obsolete Tier 2 window pair are recorded in `docs/stitching/file-collision-register.md`. |
+| Application log | Partially applied | Codex continuation entries are recorded in `docs/stitching/bundle-application-log.md`. |
+| Restore/build/test outputs | Deferred | Blocked locally by missing .NET SDK; see `docs/compile/compile-error-register.md` entry `P5B-E002`. |
 
 ## Known Regeneration / Supersession Notes
 
 - Phase 1H had regenerated/final artifacts; prefer the latest explicitly regenerated owner-approved bundle.
 - `tools/find-spec-derivations.ps1` is regenerated repeatedly; latest accepted version wins.
 - HANDOFF deltas are retained as separate files and not collapsed during Phase 5A.
+- `TaskTree.TestSupport` supersedes old `tests/TaskTree.Core.Tests/TestDoubles/` files.
+- Phase 2B `ReminderToast` supersedes the Phase 1G Tier 2 WPF window, but deletion remains gated on a successful Release build.
 
 ## Claude/Codex Gaps
 
 | Gap | Description | Target |
 |---|---|---|
-| #352 | Verify exact available bundle filenames and resolve missing/regenerated bundle ambiguity | Phase 5A |
-| #353 | Document superseded bundles and avoid applying obsolete artifacts | Phase 5A |
-| #357 | Produce complete bundle inventory showing applied, missing, superseded, and review-required bundles | Phase 5A |
+| #352 | Verify exact available bundle filenames and resolve missing/regenerated bundle ambiguity | Partially blocked: original bundles unavailable in checkout |
+| #353 | Document superseded bundles and avoid applying obsolete artifacts | Partially applied via collision register |
+| #357 | Produce complete bundle inventory showing applied, missing, superseded, and review-required bundles | Partially applied via current repo evidence inventory |

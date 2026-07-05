@@ -16,5 +16,6 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\TaskTree.Core\TaskTree.Core.csproj" />
     <ProjectReference Include="..\..\src\TaskTree.Modules.AutoUpdater\TaskTree.Modules.AutoUpdater.csproj" />
+    <ProjectReference Include="..\TaskTree.TestSupport\TaskTree.TestSupport.csproj" />
   </ItemGroup>
 </Project>

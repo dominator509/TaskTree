@@ -5,8 +5,10 @@
 
 using System;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using TaskTree.Core.Abstractions;
 using TaskTree.Core.Logging;
+using TaskTree.Core.Models;
 using TaskTree.Core.Security;
 using TaskTree.Modules.ComplianceCore;
 using TaskTree.Modules.ReminderScheduler;
@@ -24,9 +26,10 @@ namespace TaskTree.App.Bootstrap
     {
         public static IServiceCollection AddTaskTreeServices(this IServiceCollection services)
         {
-            services.AddSingleton<IClock, Clock>(); services.AddSingleton<ICryptoProvider, AesGcmCryptoProvider>(); services.AddSingleton<IAppLogger>(sp=>new FileAppLogger(CompositionRoot.GetLogDirectory()));
-            services.AddSingleton<IMasterKeyManager>(sp=>new MasterKeyManager(CompositionRoot.GetKeyDirectory(),sp.GetRequiredService<IAppLogger>(),"master.bin"));
-            services.AddSingleton<ISecureStore>(sp=>new SecureStore(CompositionRoot.GetStorageDirectory(),sp.GetRequiredService<IMasterKeyManager>(),sp.GetRequiredService<ICryptoProvider>(),sp.GetRequiredService<IAppLogger>()));
+            services.TryAddSingleton<TaskTreePaths>();
+            services.AddSingleton<IClock, Clock>(); services.AddSingleton<ICryptoProvider, AesGcmCryptoProvider>(); services.AddSingleton<IAppLogger>(sp=>{var paths=sp.GetRequiredService<TaskTreePaths>();paths.EnsureDirectoriesExist();return new FileAppLogger(paths.LogDir);});
+            services.AddSingleton<IMasterKeyManager>(sp=>{var paths=sp.GetRequiredService<TaskTreePaths>();paths.EnsureDirectoriesExist();return new MasterKeyManager(paths.KeyDir,sp.GetRequiredService<IAppLogger>(),"master.bin");});
+            services.AddSingleton<ISecureStore>(sp=>{var paths=sp.GetRequiredService<TaskTreePaths>();paths.EnsureDirectoriesExist();return new SecureStore(paths.StorageDir,sp.GetRequiredService<IMasterKeyManager>(),sp.GetRequiredService<ICryptoProvider>(),sp.GetRequiredService<IAppLogger>());});
             services.AddSingleton<IComplianceCore>(sp=>{var logger=sp.GetRequiredService<IAppLogger>();var writer=new AuditChainWriter(sp.GetRequiredService<ISecureStore>(),sp.GetRequiredService<IClock>(),logger);return new ComplianceCore(sp.GetRequiredService<ISecureStore>(),sp.GetRequiredService<IClock>(),logger,new PhiRedactor(Array.Empty<string>()),writer);});
             services.AddSingleton<ISnoozeService>(sp=>new SnoozeService(sp.GetRequiredService<ISecureStore>(),sp.GetRequiredService<IComplianceCore>(),sp.GetRequiredService<IClock>(),sp.GetRequiredService<IAppLogger>()));
             services.AddSingleton<ISettingsService>(sp=>new SettingsService(sp.GetRequiredService<ISecureStore>(),sp.GetRequiredService<IComplianceCore>(),sp.GetRequiredService<IClock>(),sp.GetRequiredService<IAppLogger>()));

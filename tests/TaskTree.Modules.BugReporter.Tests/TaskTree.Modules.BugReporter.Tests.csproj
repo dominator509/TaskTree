@@ -30,6 +30,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\TaskTree.Modules.BugReporter\TaskTree.Modules.BugReporter.csproj" />
+    <ProjectReference Include="..\TaskTree.TestSupport\TaskTree.TestSupport.csproj" />
   </ItemGroup>
 
 </Project>

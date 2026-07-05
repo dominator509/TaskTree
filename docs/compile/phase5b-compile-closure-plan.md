@@ -31,6 +31,19 @@ dotnet build TaskTree.sln -c Debug
 dotnet build TaskTree.sln -c Release
 ```
 
+## Current Execution Status
+
+| Step | Status | Evidence / next gate |
+|---|---|---|
+| Confirm stitched repo is authoritative | Applied | `docs/stitching/*.md` now records current repo evidence and source-of-truth boundaries. |
+| Marker verification | Passing | `rtk powershell -NoProfile -ExecutionPolicy Bypass -File tools/find-spec-derivations.ps1 -Root .` reports `Grand total: 179 expected 179`. |
+| Restore | Deferred | `rtk dotnet restore TaskTree.sln` fails locally because `dotnet` is unavailable on PATH (`P5B-E002`). |
+| Debug build | Blocked by restore/toolchain | Requires .NET SDK. |
+| Release build | Blocked by restore/toolchain | Requires .NET SDK; also gates Tier 2 obsolete window deletion. |
+| Compile-error register | Populated/current | Entries `P5B-E001` through `P5B-E013`; `P5B-E002` and `P5B-E011` remain deferred. |
+| Compile-resolution log | Populated/current | Resolutions through `P5B-R011`; all applied static fixes are logged. |
+| Phase 5C handoff | Not ready | Phase 5C requires successful restore, Debug build, and Release build first. |
+
 ## Constructor Churn Reconciliation
 
 Prefer this order:
@@ -108,10 +121,10 @@ Phase 5B is complete only when:
 
 | Gap | Description | Target |
 |---|---|---|
-| #367 | Compile fixes must not redesign features or expand scope beyond buildability | Phase 5B |
-| #375 | Constructor churn must be reconciled without changing runtime behavior | Phase 5B |
-| #376 | DI registrations must be reconciled and unresolved runtime graph gaps documented | Phase 5B |
-| #378 | Duplicate/conflicting models/enums must be resolved with selected source and compatibility rationale | Phase 5B |
-| #379 | Interface/implementation drift must be closed systematically and recorded | Phase 5B |
-| #382 | TestSupport fakes must be reconciled with final interfaces and constructors | Phase 5B |
-| #384 | Actual compile closure requires Claude/Codex on stitched repo with real command outputs | Claude/Codex Phase 5B |
+| #367 | Compile fixes must not redesign features or expand scope beyond buildability | Preserved; static fixes only |
+| #375 | Constructor churn must be reconciled without changing runtime behavior | Partially applied statically; build proof deferred |
+| #376 | DI registrations must be reconciled and unresolved runtime graph gaps documented | Partially applied via `TaskTreePaths`; build proof deferred |
+| #378 | Duplicate/conflicting models/enums must be resolved with selected source and compatibility rationale | Partially applied via model/enum static audits and TestSupport duplicate deletion |
+| #379 | Interface/implementation drift must be closed systematically and recorded | Partially applied via `IAppLogger` and related interface audits |
+| #382 | TestSupport fakes must be reconciled with final interfaces and constructors | Applied statically; compile proof deferred |
+| #384 | Actual compile closure requires Claude/Codex on stitched repo with real command outputs | Still open; restore/build blocked by missing .NET SDK |

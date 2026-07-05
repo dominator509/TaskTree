@@ -128,10 +128,10 @@ namespace TaskTree.Modules.ReminderScheduler
                     catch (OperationCanceledException) { break; }
 
                     try { await TickOnceAsync(ct).ConfigureAwait(false); }
-                    catch (Exception ex) { _logger.LogError($"ReminderScheduler tick failed: {ex.GetType().Name}: {ex.Message}"); }
+                    catch (Exception ex) { _logger.LogError(ex, "ReminderScheduler tick failed: {0}: {1}", ex.GetType().Name, ex.Message); }
                 }
             }
-            catch (Exception ex) { _logger.LogError($"ReminderScheduler loop terminated unexpectedly: {ex.GetType().Name}: {ex.Message}"); }
+            catch (Exception ex) { _logger.LogError(ex, "ReminderScheduler loop terminated unexpectedly: {0}: {1}", ex.GetType().Name, ex.Message); }
         }
 
         // HALT-Msg2 #2 — internal for direct test invocation. Gap #47: production MUST NOT call.
@@ -175,7 +175,7 @@ namespace TaskTree.Modules.ReminderScheduler
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError($"ReminderScheduler: node {node.Id} processing failed: {ex.GetType().Name}: {ex.Message}");
+                    _logger.LogError(ex, "ReminderScheduler: node {0} processing failed: {1}: {2}", node.Id, ex.GetType().Name, ex.Message);
                 }
             }
         }

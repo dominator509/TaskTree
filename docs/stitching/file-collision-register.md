@@ -39,6 +39,34 @@ Examples:
 
 Rule: latest approved patch wins, with Phase 5B compile/test reconciliation.
 
+### TestSupport old-location duplicate files
+
+Path:
+- `tests/TaskTree.Core.Tests/TestDoubles/FakeClock.cs`
+- `tests/TaskTree.Core.Tests/TestDoubles/InMemorySecureStore.cs`
+
+Selected source phase: Phase 2A TestSupport promotion
+Selected replacement path:
+- `tests/TaskTree.TestSupport/FakeClock.cs`
+- `tests/TaskTree.TestSupport/InMemorySecureStore.cs`
+
+Superseded source phase(s): Phase 1D / Phase 1H old-location test double files.
+Reason selected: `docs/Phase5A-using-migration-manifest.md` required migration to `TaskTree.TestSupport` and deletion of old locations after consumers moved.
+Requires Phase 5B review: yes - static review completed; restore/build/test still SDK-blocked.
+Notes: Old files are deleted in the current working tree; marker inventory is preserved by carrying the Phase 1H marker onto the promoted support file.
+
+### Obsolete Tier 2 WPF window pair
+
+Path:
+- `src/TaskTree.Orchestrator/Views/ToastTier2Window.xaml`
+- `src/TaskTree.Orchestrator/Views/ToastTier2Window.xaml.cs`
+
+Selected source phase: Deferred pending Release build gate.
+Superseded source phase(s): Phase 1G programmatic Tier 2 WPF window, superseded by Phase 2B `TaskTree.UI.Views.ReminderToast`.
+Reason selected: `docs/Phase5A-tier2-deletion-manifest.md` requires a successful `dotnet build TaskTree.sln -c Release` before deletion.
+Requires Phase 5B review: yes - source-reference preconditions verified; deletion blocked locally by missing .NET SDK.
+Notes: Current grep for `ToastTier2Window` under `src/` now identifies only the obsolete pair.
+
 ## Collision Register Template
 
 ```text

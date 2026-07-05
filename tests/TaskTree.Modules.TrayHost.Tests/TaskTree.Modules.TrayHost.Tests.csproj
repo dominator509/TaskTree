@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <!-- Phase 2A Msg 1 patch: add TestSupport ProjectReference (Gap #97/#98 promotion). -->
-  <!-- Gap #106: using TaskTree.Core.Tests.TestDoubles must migrate to using TaskTree.TestSupport at Phase 5A. -->
+  <!-- Gap #106: migrated shared test doubles to TaskTree.TestSupport at Phase 5A. -->
 
   <PropertyGroup>
     <TargetFramework>net8.0-windows</TargetFramework>

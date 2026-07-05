@@ -45,7 +45,7 @@ namespace TaskTree.UI.ViewModels
             }
             catch (Exception ex)
             {
-                _logger.LogError($"SettingsViewModel.LoadAsync failed: {ex.GetType().Name}: {ex.Message}");
+                _logger.LogError(ex, "SettingsViewModel.LoadAsync failed: {0}: {1}", ex.GetType().Name, ex.Message);
                 StatusMessage = "Settings load failed - see log";
             }
             finally { IsBusy = false; }
@@ -62,7 +62,7 @@ namespace TaskTree.UI.ViewModels
             }
             catch (Exception ex)
             {
-                _logger.LogError($"SettingsViewModel.SaveAsync failed: {ex.GetType().Name}: {ex.Message}");
+                _logger.LogError(ex, "SettingsViewModel.SaveAsync failed: {0}: {1}", ex.GetType().Name, ex.Message);
                 StatusMessage = "Settings save failed - see log";
             }
             finally { IsBusy = false; }
@@ -80,7 +80,7 @@ namespace TaskTree.UI.ViewModels
             }
             catch (Exception ex)
             {
-                _logger.LogError($"SettingsViewModel.ResetAsync failed: {ex.GetType().Name}: {ex.Message}");
+                _logger.LogError(ex, "SettingsViewModel.ResetAsync failed: {0}: {1}", ex.GetType().Name, ex.Message);
                 StatusMessage = "Settings reset failed - see log";
             }
             finally { IsBusy = false; }

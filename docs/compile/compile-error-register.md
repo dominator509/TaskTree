@@ -104,3 +104,190 @@ Proposed fix: Re-run Phase 5B restore/build commands in an environment with the 
 Status: Deferred
 Resolution reference: None in this environment.
 Follow-up gap: #384 remains open for actual Claude/Codex compile execution with real restore/build outputs.
+
+### P5B-E003 - IAppLogger Error Contract Drift
+
+Error ID: P5B-E003
+Command: Static Phase 5B contract audit via `rtk git grep -n LogError`
+Configuration: N/A
+Project: Multiple production and test projects
+File: `src/TaskTree.Modules.*`, `src/TaskTree.Orchestrator`, `src/TaskTree.UI`, `tests/TaskTree.Modules.*`
+Line: Multiple call sites
+Column: N/A
+Compiler error code: N/A
+Message: Several production call sites and test/null loggers still used the stale `LogError(string)` shape while `IAppLogger` declares `LogError(Exception? exception, string message, params object?[] args)`.
+Root cause category: Interface contract drift
+Proposed fix: Pass caught exceptions into `LogError` at call sites and update fake/null loggers to implement the current full `IAppLogger` interface.
+Status: Resolved
+Resolution reference: P5B-R002
+Follow-up gap: None.
+
+### P5B-E004 - Solution Missing Present Generated Projects
+
+Error ID: P5B-E004
+Command: Static Phase 5B project reconciliation via `dir /s /b *.csproj`, `type TaskTree.sln`, and `docs/stitching/expected-solution-projects.md`
+Configuration: Debug / Release
+Project: `TaskTree.sln`
+File: `TaskTree.sln`
+Line: Project inventory / ProjectConfigurationPlatforms
+Column: N/A
+Compiler error code: N/A
+Message: The stitched repo contained generated Phase 2 module projects plus retained perf/test-support projects that were absent from `TaskTree.sln`.
+Root cause category: Missing project
+Proposed fix: Add present generated projects to `TaskTree.sln` with Debug/Release configuration rows.
+Status: Resolved
+Resolution reference: P5B-R003
+Follow-up gap: None for the `.csproj` solution inventory. Packaging WAP remains Phase 5E-scoped and path-valid at `packaging/TaskTree.Installer.wapproj`.
+
+### P5B-E005 - App Missing Generated Module References
+
+Error ID: P5B-E005
+Command: Static Phase 5B project-reference audit via `type src\TaskTree.App\TaskTree.App.csproj` and `type src\TaskTree.App\Bootstrap\ServiceRegistrations.cs`
+Configuration: Debug / Release
+Project: `TaskTree.App`
+File: `src/TaskTree.App/TaskTree.App.csproj`
+Line: ProjectReference item group
+Column: N/A
+Compiler error code: N/A
+Message: `ServiceRegistrations` constructs `SettingsService`, `SessionLockService`, and `SnoozeService`, but `TaskTree.App.csproj` did not reference the corresponding generated module projects.
+Root cause category: Missing project reference
+Proposed fix: Add project references for `TaskTree.Modules.Settings`, `TaskTree.Modules.SessionLock`, and `TaskTree.Modules.Snooze`.
+Status: Resolved
+Resolution reference: P5B-R004
+Follow-up gap: None.
+
+### P5B-E006 - Test Projects Missing TestSupport Reference
+
+Error ID: P5B-E006
+Command: Static Phase 5B project-reference audit via `rtk git grep -n TaskTree.TestSupport tests/TaskTree.Modules.AutoUpdater.Tests` and `rtk git grep -n TaskTree.TestSupport tests/TaskTree.Modules.BugReporter.Tests`
+Configuration: Debug / Release
+Project: `TaskTree.Modules.AutoUpdater.Tests`; `TaskTree.Modules.BugReporter.Tests`
+File: `tests/TaskTree.Modules.AutoUpdater.Tests/TaskTree.Modules.AutoUpdater.Tests.csproj`; `tests/TaskTree.Modules.BugReporter.Tests/TaskTree.Modules.BugReporter.Tests.csproj`
+Line: ProjectReference item group
+Column: N/A
+Compiler error code: N/A
+Message: Test source files in both projects import `TaskTree.TestSupport`, but the projects did not reference `tests/TaskTree.TestSupport/TaskTree.TestSupport.csproj`.
+Root cause category: Test support fake mismatch / missing project reference
+Proposed fix: Add `ProjectReference` entries to `TaskTree.TestSupport`.
+Status: Resolved
+Resolution reference: P5B-R005
+Follow-up gap: None.
+
+### P5B-E007 - Non-Portable Regex Control Characters
+
+Error ID: P5B-E007
+Command: Static source inspection of `src\TaskTree.UI\ViewModels\TaskBuilderViewModel.cs`
+Configuration: Debug / Release
+Project: `TaskTree.UI`
+File: `src/TaskTree.UI/ViewModels/TaskBuilderViewModel.cs`
+Line: `DateLike` regex declaration
+Column: N/A
+Compiler error code: N/A
+Message: The date-like PHI heuristic regex contained rendered control characters where regex word-boundary escapes were intended.
+Root cause category: Nullable/reference-type issue
+Proposed fix: Replace the control characters with explicit regex `\b` word-boundary escapes.
+Status: Resolved
+Resolution reference: P5B-R006
+Follow-up gap: None.
+
+### P5B-E008 - Snooze Audit TargetId Type Drift
+
+Error ID: P5B-E008
+Command: Static Phase 5B model contract audit via `rtk git grep -n TargetId src tests`
+Configuration: Debug / Release
+Project: `TaskTree.Modules.Snooze`
+File: `src/TaskTree.Modules.Snooze/SnoozeService.cs`
+Line: `AuditAsync` helper
+Column: N/A
+Compiler error code: N/A
+Message: `SnoozeService` assigned `AuditEntry.TargetId` from `taskId.ToString()` while the reconciled `AuditEntry.TargetId` property is `Guid`.
+Root cause category: Enum/model mismatch
+Proposed fix: Assign the `Guid` task id directly to `AuditEntry.TargetId`.
+Status: Resolved
+Resolution reference: P5B-R007
+Follow-up gap: None.
+
+### P5B-E009 - TaskTreePaths DI Registration Drift
+
+Error ID: P5B-E009
+Command: Static Phase 5B DI audit via `type src\TaskTree.Core\Models\TaskTreePaths.cs`, `type src\TaskTree.App\Bootstrap\ServiceRegistrations.cs`, and `type tests\TaskTree.Orchestrator.Tests\ServiceRegistrationsTests.cs`
+Configuration: Debug / Release
+Project: `TaskTree.App`
+File: `src/TaskTree.App/Bootstrap/ServiceRegistrations.cs`
+Line: `AddTaskTreeServices`
+Column: N/A
+Compiler error code: N/A
+Message: `TaskTreePaths` documentation and ServiceRegistrations tests expect a singleton path model, but `AddTaskTreeServices` did not register or consume it; module factories used static `CompositionRoot` path helpers instead.
+Root cause category: Constructor signature drift / DI registration mismatch
+Proposed fix: Register `TaskTreePaths` with `TryAddSingleton` and make logger, key-manager, and secure-store factories use the injected paths while preserving default `%LOCALAPPDATA%\TaskTree` behavior.
+Status: Resolved
+Resolution reference: P5B-R008
+Follow-up gap: None.
+
+### P5B-E010 - Phase 5A TestSupport Migration Incomplete
+
+Error ID: P5B-E010
+Command: Static Phase 5A/5B migration audit via `rtk rg -n TaskTree.Core.Tests.TestDoubles tests src` and `rtk rg --files tests/TaskTree.Core.Tests/TestDoubles`
+Configuration: Debug / Release
+Project: `TaskTree.Modules.ReminderScheduler.Tests`; `TaskTree.Core.Tests`
+File: `tests/TaskTree.Modules.ReminderScheduler.Tests/ReminderSchedulerTests.cs`; `tests/TaskTree.Core.Tests/TestDoubles/FakeClock.cs`; `tests/TaskTree.Core.Tests/TestDoubles/InMemorySecureStore.cs`
+Line: Remaining old using plus obsolete duplicate files
+Column: N/A
+Compiler error code: N/A
+Message: Phase 5A's TestSupport promotion manifest was not fully applied: one test still imported `TaskTree.Core.Tests.TestDoubles`, and obsolete old-location test double files remained after the promoted `TaskTree.TestSupport` project was present.
+Root cause category: Test support fake mismatch / duplicate type/file collision
+Proposed fix: Migrate the remaining test import to `TaskTree.TestSupport`, remove stale old-namespace comments that violate the manifest verification, and delete the superseded old-location test double files.
+Status: Resolved
+Resolution reference: P5B-R009
+Follow-up gap: Build/test verification remains deferred to an environment with the .NET SDK available.
+
+### P5B-E011 - Tier 2 Obsolete Window Deletion Build Gate Unmet
+
+Error ID: P5B-E011
+Command: Static Phase 5A deletion precondition audit via `rtk rg -n ReminderToast src/TaskTree.Orchestrator/ToastTier2Adapter.cs`, `rtk rg -n TaskTree.UI.csproj src/TaskTree.Orchestrator/TaskTree.Orchestrator.csproj`, and `rtk dotnet restore TaskTree.sln`
+Configuration: Release
+Project: `TaskTree.Orchestrator`
+File: `docs/Phase5A-tier2-deletion-manifest.md`; `src/TaskTree.Orchestrator/Views/ToastTier2Window.xaml`; `src/TaskTree.Orchestrator/Views/ToastTier2Window.xaml.cs`
+Line: N/A
+Column: N/A
+Compiler error code: N/A
+Message: The Tier 2 deletion manifest's source-reference preconditions are satisfied, but its required build-before-delete gate cannot be executed locally because the .NET SDK is unavailable.
+Root cause category: Local environment/toolchain missing
+Proposed fix: Run `dotnet build TaskTree.sln -c Release` in an environment with the .NET SDK available, then delete the obsolete `ToastTier2Window` files only after that build precondition passes.
+Status: Deferred
+Resolution reference: None in this environment.
+Follow-up gap: Obsolete Tier 2 files remain intentionally present until the Release build precondition is proven.
+
+### P5B-E012 - Tier 2 Deletion Manifest Grep Drift
+
+Error ID: P5B-E012
+Command: Static manifest verification via `rtk rg -n ToastTier2Window src`
+Configuration: N/A
+Project: `TaskTree.UI`
+File: `src/TaskTree.UI/Views/ReminderToast.xaml.cs`
+Line: file header comment
+Column: N/A
+Compiler error code: N/A
+Message: The Tier 2 deletion manifest expects pre-deletion `ToastTier2Window` hits to be limited to the two obsolete files, but the replacement `ReminderToast` header comment also named the obsolete type.
+Root cause category: Namespace / file inclusion check drift
+Proposed fix: Remove the obsolete type name from the replacement file's comment while preserving the Phase 2B/Gaps context.
+Status: Resolved
+Resolution reference: P5B-R010
+Follow-up gap: Obsolete Tier 2 files remain deferred until Release build precondition passes.
+
+### P5B-E013 - TreatWarningsAsErrors Unused Member Drift
+
+Error ID: P5B-E013
+Command: Static warning-as-error audit via `rtk rg -n TreatWarningsAsErrors src tests` and source inspection
+Configuration: Debug / Release
+Project: `TaskTree.Modules.ComplianceCore`; `TaskTree.Modules.Settings`
+File: `src/TaskTree.Modules.ComplianceCore/ComplianceCore.cs`; `src/TaskTree.Modules.Settings/SettingsService.cs`
+Line: private fields / `SaveAsync`
+Column: N/A
+Compiler error code: CS0169 / CS0414 / CS0219 risk
+Message: `TaskTree.Modules.ComplianceCore` enables `TreatWarningsAsErrors` while storing constructor dependencies in private fields that are never read. `SettingsService.SaveAsync` also retained an unused local snapshot.
+Root cause category: Nullable/reference-type issue
+Proposed fix: Preserve constructor null validation without retaining unused private fields, and remove the unused `oldSettings` local.
+Status: Resolved
+Resolution reference: P5B-R011
+Follow-up gap: Build verification remains deferred to an environment with the .NET SDK available.

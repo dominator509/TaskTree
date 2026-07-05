@@ -19,7 +19,7 @@ namespace TaskTree.UI.ViewModels
         private const int MaxLabHintLength = 120;
         private const int MaxDeliveryHintLength = 120;
         private static readonly Regex SevenDigits = new(@"\d{7,}", RegexOptions.Compiled);
-        private static readonly Regex DateLike = new(@"\d{1,2}/\d{1,2}(/\d{2,4})?", RegexOptions.Compiled);
+        private static readonly Regex DateLike = new(@"\b\d{1,2}/\d{1,2}(/\d{2,4})?\b", RegexOptions.Compiled);
 
         private readonly ITaskEngine _taskEngine;
         private readonly IClock _clock;
@@ -72,7 +72,7 @@ namespace TaskTree.UI.ViewModels
             }
             catch (Exception ex)
             {
-                _logger.LogError($"TaskBuilder create failed: {ex.GetType().Name}: {ex.Message}");
+                _logger.LogError(ex, "TaskBuilder create failed: {0}: {1}", ex.GetType().Name, ex.Message);
                 StatusMessage = "Create failed - see log";
             }
             finally { IsBusy = false; }

@@ -36,7 +36,7 @@ namespace TaskTree.Modules.Settings
             }
             catch (Exception ex)
             {
-                _logger.LogError($"SettingsService.GetAsync failed; returning defaults: {ex.GetType().Name}: {ex.Message}");
+                _logger.LogError(ex, "SettingsService.GetAsync failed; returning defaults: {0}: {1}", ex.GetType().Name, ex.Message);
                 return TaskTreeSettings.Default;
             }
         }
@@ -44,7 +44,6 @@ namespace TaskTree.Modules.Settings
         public async Task SaveAsync(TaskTreeSettings settings)
         {
             Validate(settings);
-            var oldSettings = await GetAsync().ConfigureAwait(false);
             try
             {
                 await _secureStore.SaveAsync(StorageKey, settings).ConfigureAwait(false);
@@ -59,7 +58,7 @@ namespace TaskTree.Modules.Settings
             }
             catch (Exception ex)
             {
-                _logger.LogError($"SettingsService.SaveAsync failed: {ex.GetType().Name}: {ex.Message}");
+                _logger.LogError(ex, "SettingsService.SaveAsync failed: {0}: {1}", ex.GetType().Name, ex.Message);
                 throw;
             }
         }

@@ -45,9 +45,6 @@ namespace TaskTree.Modules.ComplianceCore;
 /// </remarks>
 public sealed class ComplianceCore : IComplianceCore
 {
-    private readonly ISecureStore _store;
-    private readonly IClock _clock;
-    private readonly IAppLogger _logger;
     private readonly PhiRedactor _redactor;
     private readonly AuditChainWriter _auditWriter;
 
@@ -70,9 +67,9 @@ public sealed class ComplianceCore : IComplianceCore
         PhiRedactor redactor,
         AuditChainWriter auditWriter)
     {
-        _store = store ?? throw new ArgumentNullException(nameof(store));
-        _clock = clock ?? throw new ArgumentNullException(nameof(clock));
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        ArgumentNullException.ThrowIfNull(store);
+        ArgumentNullException.ThrowIfNull(clock);
+        ArgumentNullException.ThrowIfNull(logger);
         _redactor = redactor ?? throw new ArgumentNullException(nameof(redactor));
         _auditWriter = auditWriter ?? throw new ArgumentNullException(nameof(auditWriter));
     }

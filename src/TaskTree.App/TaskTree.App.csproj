@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <!-- Phase 1F Msg 1 patches (HALT #12) -->
-  <!-- PackageRefs: DI 8.0 + Logging 8.0; ProjectRefs: Core + 5 modules + Orchestrator -->
+  <!-- PackageRefs: DI 8.0 + Logging 8.0; ProjectRefs: Core + generated modules + Orchestrator -->
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
@@ -25,6 +25,9 @@
     <ProjectReference Include="..\TaskTree.Modules.SecureStore\TaskTree.Modules.SecureStore.csproj" />
     <ProjectReference Include="..\TaskTree.Modules.ComplianceCore\TaskTree.Modules.ComplianceCore.csproj" />
     <ProjectReference Include="..\TaskTree.Modules.ReminderScheduler\TaskTree.Modules.ReminderScheduler.csproj" />
+    <ProjectReference Include="..\TaskTree.Modules.SessionLock\TaskTree.Modules.SessionLock.csproj" />
+    <ProjectReference Include="..\TaskTree.Modules.Settings\TaskTree.Modules.Settings.csproj" />
+    <ProjectReference Include="..\TaskTree.Modules.Snooze\TaskTree.Modules.Snooze.csproj" />
     <ProjectReference Include="..\TaskTree.Modules.TrayHost\TaskTree.Modules.TrayHost.csproj" />
     <ProjectReference Include="..\TaskTree.Orchestrator\TaskTree.Orchestrator.csproj" />
   </ItemGroup>

@@ -50,9 +50,10 @@ namespace TaskTree.Modules.AutoUpdater
         private sealed class SystemClockAdapter : IClock { public DateTimeOffset UtcNow => DateTimeOffset.UtcNow; }
         private sealed class NullAppLogger : IAppLogger
         {
-            public void LogInformation(string message) { }
-            public void LogWarning(string message) { }
-            public void LogError(string message) { }
+            public void LogDebug(string message, params object?[] args) { }
+            public void LogInformation(string message, params object?[] args) { }
+            public void LogWarning(string message, params object?[] args) { }
+            public void LogError(Exception? exception, string message, params object?[] args) { }
         }
     }
 }

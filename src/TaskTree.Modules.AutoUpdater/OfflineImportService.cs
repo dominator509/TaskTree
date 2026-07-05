@@ -61,7 +61,7 @@ namespace TaskTree.Modules.AutoUpdater
             }
             catch (InvalidDataException ex)
             {
-                _logger.LogError($"Offline update bundle is not a valid ZIP: {ex.Message}");
+                _logger.LogError(ex, "Offline update bundle is not a valid ZIP: {0}", ex.Message);
                 throw;
             }
         }

@@ -23,6 +23,6 @@ namespace TaskTree.Modules.Snooze
         public async Task<IReadOnlyList<SnoozeState>> GetAllAsync(){var map=await LoadAsync();return map.Values.Where(s=>s.SnoozedUntilUtc>_clock.UtcNow).ToList();}
         private async Task<Dictionary<Guid,SnoozeState>> LoadAsync()=>await _store.LoadAsync<Dictionary<Guid,SnoozeState>>(StorageKey)??new Dictionary<Guid,SnoozeState>();
         private Task SaveMapAsync(Dictionary<Guid,SnoozeState> map)=>_store.SaveAsync(StorageKey,map);
-        private Task AuditAsync(string action, Guid taskId)=>_compliance.AuditAsync(new AuditEntry{Module="SnoozeService",Action=action,Result="success",TargetId=taskId.ToString(),Timestamp=_clock.UtcNow});
+        private Task AuditAsync(string action, Guid taskId)=>_compliance.AuditAsync(new AuditEntry{Module="SnoozeService",Action=action,Result="success",TargetId=taskId,Timestamp=_clock.UtcNow});
     }
 }

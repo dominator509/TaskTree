@@ -78,7 +78,7 @@ namespace TaskTree.Modules.TrayHost
                     Timestamp = _clock.UtcNow,
                 }).ConfigureAwait(false);
             }
-            catch (Exception ex) { _logger.LogError($"HotkeyManager audit failed: {ex.Message}"); }
+            catch (Exception ex) { _logger.LogError(ex, "HotkeyManager audit failed: {0}", ex.Message); }
 
             HotkeyChanged?.Invoke(this, new HotkeyChangedEventArgs { OldConfig = oldConfig, NewConfig = config });
             return HotkeyRegistrationResult.Success;
