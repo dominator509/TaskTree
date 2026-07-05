@@ -461,3 +461,205 @@ Tests/build commands re-run:
 Command output reference: Static grep should show the updater inconclusive removed and the positive test present. Real `dotnet test` execution remains unavailable locally because no .NET SDK is available on PATH.
 Follow-up gap created/updated: `P5B-E002` remains the restore/build/test environment blocker; real production signing key remains Phase 5F/release owner input.
 Reviewer/owner note: Re-run SDK-backed AutoUpdater tests before Phase 5B/5C sign-off.
+
+### P5B-R019 - TestSupport FakeClock Canonicalization
+
+Resolution ID: P5B-R019
+Related compile error ID(s): P5B-E021
+File(s) changed:
+- `tests/TaskTree.TestSupport/FakeClock.cs`
+- `tests/TaskTree.TestSupport/Clocks/FakeClock.cs`
+- `docs/compile/compile-error-register.md`
+- `docs/compile/compile-resolution-log.md`
+Change summary: Made the root `TaskTree.TestSupport.FakeClock` a compatibility alias over the promoted `TaskTree.TestSupport.Clocks.FakeClock` implementation, while preserving the settable `UtcNow` surface used by existing migrated tests and documenting the changed public constructors.
+Exact rationale: Phase 1D documentation identifies the `Clocks` namespace helper as the promoted canonical fake, but the active migrated tests use the root namespace helper. Keeping two independent implementations would leave TestSupport behavior forked during compile closure.
+Why this is compile-closure only: The edit only reconciles shared test-support helper implementation and XML documentation. Production code, public product APIs, package references, live integrations, and test assertions are unchanged.
+Why runtime behavior is unchanged or minimally changed: Existing root-namespace consumers still construct `FakeClock` with the same constructors and can still set `UtcNow`; the underlying behavior now comes from the promoted helper.
+Regression risk: Low to medium; the promoted helper rejects backwards time movement. Current static search shows the active setter use advances time forward.
+Tests/build commands re-run:
+- `rtk rg -n TaskTree.TestSupport.Clocks docs tests src`
+- `rtk rg -n FakeClock tests\TaskTree.TestSupport tests\TaskTree.Modules.TaskEngine.Tests`
+- `rtk git diff --check`
+Command output reference: Static grep should show the promoted helper retained and the root helper forwarding to it. Real `dotnet test` execution remains unavailable locally because no .NET SDK is available on PATH.
+Follow-up gap created/updated: `P5B-E002` remains the restore/build/test environment blocker.
+Reviewer/owner note: Re-run SDK-backed tests before Phase 5B/5C sign-off, especially `TaskTree.Modules.TaskEngine.Tests`.
+
+### P5B-R020 - Expected Solution Inventory Reconciliation
+
+Resolution ID: P5B-R020
+Related compile error ID(s): P5B-E022
+File(s) changed:
+- `docs/stitching/expected-solution-projects.md`
+- `docs/compile/compile-error-register.md`
+- `docs/compile/compile-resolution-log.md`
+- `docs/compile/phase5b-compile-closure-plan.md`
+- `docs/stitching/gap-carryforward-v1.0.46.md`
+- `docs/stitching/bundle-application-log.md`
+- `docs/HANDOFF-v1.0.48-delta.md`
+Change summary: Updated the expected solution inventory to name present generated Settings, SessionLock, and Snooze projects; added present UI, Orchestrator, TrayHost, Settings, SessionLock, and Snooze test projects; and documented that ReminderDelivery is included through Orchestrator rather than a standalone project.
+Exact rationale: Static `*.csproj` and `TaskTree.sln` inspection showed the solution inventory was already reconciled beyond the older Phase 5A scaffold, but `docs/stitching/expected-solution-projects.md` still omitted current expected projects and retained a stale possible standalone ReminderDelivery project.
+Why this is compile-closure only: The edit changes only stitching/compile documentation so the expected inventory matches the actual solution graph. No product code, project files, package references, or runtime behavior changed.
+Why runtime behavior is unchanged or minimally changed: Documentation-only change.
+Regression risk: Low; risk is limited to documentation accuracy. Restore/build proof remains the authoritative final gate.
+Tests/build commands re-run:
+- `rtk rg --files -g *.csproj src tests`
+- `type TaskTree.sln`
+- `rtk git diff --check`
+Command output reference: Static inspection shows all named source/test projects are present in `TaskTree.sln`; real restore/build proof remains unavailable locally because no .NET SDK is available on PATH.
+Follow-up gap created/updated: `P5B-E002` remains the restore/build/test environment blocker.
+Reviewer/owner note: Re-run restore, Debug build, and Release build with .NET SDK before Phase 5B sign-off.
+
+### P5B-R021 - Compile Register Category Taxonomy Reconciliation
+
+Resolution ID: P5B-R021
+Related compile error ID(s): P5B-E023
+File(s) changed:
+- `docs/compile/compile-error-register.md`
+- `docs/compile/compile-resolution-log.md`
+- `docs/compile/phase5b-compile-closure-plan.md`
+- `docs/stitching/gap-carryforward-v1.0.46.md`
+- `docs/stitching/bundle-application-log.md`
+- `docs/HANDOFF-v1.0.48-delta.md`
+Change summary: Extended the compile register root-cause category table so it includes categories already used by current Phase 5B entries.
+Exact rationale: Gap #373 requires consistent compile-error categorization. The register entries had evolved beyond the original category list as Phase 5B added marker, environment, project-inventory, and test-coverage findings.
+Why this is compile-closure only: Documentation taxonomy only; no product code, project files, package references, or runtime behavior changed.
+Why runtime behavior is unchanged or minimally changed: Documentation-only change.
+Regression risk: Low; the change makes the register more internally consistent.
+Tests/build commands re-run:
+- `rtk rg -n "Root cause category:" docs\compile\compile-error-register.md`
+- `rtk git diff --check`
+Command output reference: Static inspection should show all current root-cause categories represented in the table. Real restore/build proof remains unavailable locally because no .NET SDK is available.
+Follow-up gap created/updated: `P5B-E002` remains the restore/build/test environment blocker.
+Reviewer/owner note: Re-run restore, Debug build, and Release build with .NET SDK before Phase 5B sign-off.
+
+### P5B-R022 - MSTest Package Version Alignment
+
+Resolution ID: P5B-R022
+Related compile error ID(s): P5B-E024
+File(s) changed:
+- `tests/TaskTree.Core.Tests/TaskTree.Core.Tests.csproj`
+- `tests/TaskTree.Modules.SecureStore.Tests/TaskTree.Modules.SecureStore.Tests.csproj`
+- `tests/TaskTree.Modules.BugReporter.Tests/TaskTree.Modules.BugReporter.Tests.csproj`
+- `docs/compile/compile-error-register.md`
+- `docs/compile/compile-resolution-log.md`
+- `docs/compile/phase5b-compile-closure-plan.md`
+- `docs/stitching/gap-carryforward-v1.0.46.md`
+- `docs/stitching/bundle-application-log.md`
+- `docs/HANDOFF-v1.0.48-delta.md`
+Change summary: Aligned the three remaining MSTest `3.6.0` test projects to the repo's current `3.6.1` test package baseline.
+Exact rationale: Static package audit showed no missing project references and no solution omissions, but it did show a split MSTest package graph. Aligning patch-level MSTest versions reduces restore/test discovery drift without adding new dependencies.
+Why this is compile-closure only: The edit changes test project package versions and compile documentation only; no production code or runtime behavior changed.
+Why runtime behavior is unchanged or minimally changed: Test-package alignment only.
+Regression risk: Low; `3.6.1` was already the dominant MSTest version in the stitched test graph.
+Tests/build commands re-run:
+- `rtk node C:\tmp\tasktree-static-check.js`
+- `findstr /n /c:"MSTest.TestAdapter" /c:"MSTest.TestFramework" tests\TaskTree.Core.Tests\TaskTree.Core.Tests.csproj tests\TaskTree.Modules.SecureStore.Tests\TaskTree.Modules.SecureStore.Tests.csproj tests\TaskTree.Modules.BugReporter.Tests\TaskTree.Modules.BugReporter.Tests.csproj`
+- `rtk git diff --check`
+Command output reference: Static audit should show no mixed package versions after alignment. Real restore/build/test proof remains unavailable locally because no .NET SDK is available.
+Follow-up gap created/updated: `P5B-E002` remains the restore/build/test environment blocker.
+Reviewer/owner note: Re-run restore, Debug build, and Release build with .NET SDK before Phase 5B sign-off.
+
+### P5B-R023 - Test Project Direct Core Reference Reconciliation
+
+Resolution ID: P5B-R023
+Related compile error ID(s): P5B-E025
+File(s) changed:
+- `tests/TaskTree.Modules.BugReporter.Tests/TaskTree.Modules.BugReporter.Tests.csproj`
+- `tests/TaskTree.Modules.SecureStore.Tests/TaskTree.Modules.SecureStore.Tests.csproj`
+- `docs/compile/compile-error-register.md`
+- `docs/compile/compile-resolution-log.md`
+- `docs/compile/phase5b-compile-closure-plan.md`
+- `docs/stitching/gap-carryforward-v1.0.46.md`
+- `docs/stitching/bundle-application-log.md`
+- `docs/HANDOFF-v1.0.48-delta.md`
+Change summary: Added explicit `TaskTree.Core` project references to test projects whose source files import Core abstractions, enums, models, or security namespaces directly.
+Exact rationale: Static using/reference audit found direct `TaskTree.Core.*` imports in BugReporter and SecureStore tests while their project files depended on Core only through module project transitivity. Direct references make the stitched test graph explicit and reduce hidden compile/restore coupling.
+Why this is compile-closure only: The edit changes test project references and compile documentation only; production runtime behavior is unchanged.
+Why runtime behavior is unchanged or minimally changed: Test-project graph only.
+Regression risk: Low; `TaskTree.Core` is already a dependency of the modules under test.
+Tests/build commands re-run:
+- `rtk node C:\tmp\tasktree-using-reference-check.js`
+- `rtk node C:\tmp\tasktree-static-check.js`
+- `rtk powershell -NoProfile -ExecutionPolicy Bypass -File C:\tmp\tasktree-xml-check.ps1`
+- `rtk git diff --check`
+Command output reference: Static audits should show no missing project references inferred from using directives, no missing `ProjectReference` targets, and no malformed XML. Real restore/build/test proof remains unavailable locally because no .NET SDK is available.
+Follow-up gap created/updated: `P5B-E002` remains the restore/build/test environment blocker.
+Reviewer/owner note: Re-run restore, Debug build, and Release build with .NET SDK before Phase 5B sign-off.
+### P5B-R024 - Compile Register DI Category Reconciliation
+
+Resolution ID: P5B-R024
+Related compile error ID(s): P5B-E026
+File(s) changed:
+- `docs/compile/compile-error-register.md`
+- `docs/compile/compile-resolution-log.md`
+- `docs/compile/phase5b-compile-closure-plan.md`
+- `docs/stitching/gap-carryforward-v1.0.46.md`
+- `docs/stitching/bundle-application-log.md`
+- `docs/HANDOFF-v1.0.48-delta.md`
+Change summary: Added `DI registration mismatch` to the compile-register root-cause category table.
+Exact rationale: Static category audit found the category was used by resolved Phase 5B entries but not declared in the canonical table, weakening Gap #373 category consistency.
+Why this is compile-closure only: Documentation taxonomy only; no product code, project files, package references, or runtime behavior changed.
+Why runtime behavior is unchanged or minimally changed: Documentation-only change.
+Regression risk: Low; the change makes the register internally consistent.
+Tests/build commands re-run:
+- `rtk node C:\tmp\tasktree-category-check.js`
+- `rtk node C:\tmp\tasktree-register-check.js`
+- `rtk git diff --check`
+Command output reference: Static audits should show no undeclared used categories and no register consistency problems. Real restore/build/test proof remains unavailable locally because no .NET SDK is available.
+Follow-up gap created/updated: `P5B-E002` remains the restore/build/test environment blocker.
+Reviewer/owner note: Re-run restore, Debug build, and Release build with .NET SDK before Phase 5B sign-off.
+
+### P5B-R025 - AutoUpdater ImportLocalAsync Test Reconciliation
+
+Resolution ID: P5B-R025
+Related compile error ID(s): P5B-E027
+File(s) changed:
+- `tests/TaskTree.Modules.AutoUpdater.Tests/AutoUpdaterTests.cs`
+- `docs/compile/compile-error-register.md`
+- `docs/compile/compile-resolution-log.md`
+- `docs/compile/phase5b-compile-closure-plan.md`
+- `docs/stitching/gap-carryforward-v1.0.46.md`
+- `docs/stitching/bundle-application-log.md`
+- `docs/HANDOFF-v1.0.48-delta.md`
+Change summary: Replaced the stale `ImportLocalAsync` deferred-stub test with a current missing-bundle assertion against the implemented offline-import path.
+Exact rationale: Phase 3C derivations and current production code show `ImportLocalAsync` delegates to `OfflineImportService`; expecting `NotImplementedException` would fail once SDK-backed tests run.
+Why this is compile-closure only: The edit changes a stale test expectation and compile documentation only; production updater behavior is unchanged.
+Why runtime behavior is unchanged or minimally changed: Test-only change.
+Regression risk: Low; the test now matches current production behavior while retaining `ApplyAsync` as the Phase 5E live MSIX stub.
+Tests/build commands re-run:
+- `rtk rg -n ImportLocalAsync src tests docs\spec-derivations docs\compile Roadmap.md Architecture.md`
+- `rtk git diff --check`
+Command output reference: Static inspection shows `ImportLocalAsync` implemented through `OfflineImportService`; real test execution remains unavailable locally because no .NET SDK is available.
+Follow-up gap created/updated: `P5B-E002` remains the restore/build/test environment blocker.
+Reviewer/owner note: Re-run SDK-backed AutoUpdater tests before Phase 5B/5C sign-off.
+### P5B-R026 - Phase 5B Static Gap Status Reconciliation
+
+Resolution ID: P5B-R026
+Related compile error ID(s): P5B-E028
+File(s) changed:
+- `docs/compile/project-reference-reconciliation.md`
+- `docs/compile/phase5b-compile-closure-plan.md`
+- `docs/stitching/expected-solution-projects.md`
+- `docs/stitching/gap-carryforward-v1.0.46.md`
+- `docs/stitching/bundle-application-log.md`
+- `docs/HANDOFF-v1.0.48-delta.md`
+- `docs/compile/compile-error-register.md`
+- `docs/compile/compile-resolution-log.md`
+Change summary: Tightened Phase 5B gap status rows from generic partial status to static reconciliation status where current static audits prove the scoped reconciliation.
+Exact rationale: The project/reference, namespace, package/import, XAML/code-behind, duplicate full-type, solution configuration, and register/category audits now pass; leaving those rows as merely partial understated the current static closure while the restore/build gate remains separately deferred.
+Why this is compile-closure only: Documentation status alignment only; no product code, project files, package references, or runtime behavior changed.
+Why runtime behavior is unchanged or minimally changed: Documentation-only change.
+Regression risk: Low; the change preserves the SDK-backed build/test blocker and does not claim final Phase 5B acceptance.
+Tests/build commands re-run:
+- `rtk rg -n Partially docs\compile docs\stitching docs\HANDOFF-v1.0.48-delta.md REPO_BRIEF.md`
+- `rtk node C:\tmp\tasktree-static-check.js`
+- `rtk node C:\tmp\tasktree-using-reference-check.js`
+- `rtk node C:\tmp\tasktree-package-import-check.js`
+- `rtk node C:\tmp\tasktree-duplicate-type-check.js`
+- `rtk node C:\tmp\tasktree-xaml-check.js`
+- `rtk node C:\tmp\tasktree-sln-check.js`
+- `rtk node C:\tmp\tasktree-register-check.js`
+Command output reference: Static audits should remain green; real restore/build/test proof remains unavailable locally because no .NET SDK is available.
+Follow-up gap created/updated: `P5B-E002` remains the restore/build/test environment blocker.
+Reviewer/owner note: Re-run restore, Debug build, and Release build with .NET SDK before Phase 5B sign-off.
+

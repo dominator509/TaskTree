@@ -18,12 +18,11 @@
 
 ## Expected Phase 2 Delta Projects If Present
 
-- Settings module project
-- SessionLock module project
-- Snooze module project
-- ReminderDelivery module project
+- `src/TaskTree.Modules.Settings/TaskTree.Modules.Settings.csproj`
+- `src/TaskTree.Modules.SessionLock/TaskTree.Modules.SessionLock.csproj`
+- `src/TaskTree.Modules.Snooze/TaskTree.Modules.Snooze.csproj`
 
-Claude/Codex must reconcile these against actual generated bundle contents and `TaskTree.sln`.
+No standalone ReminderDelivery module project is present in the stitched checkout; reminder delivery types live under `src/TaskTree.Orchestrator/` and are included through `src/TaskTree.Orchestrator/TaskTree.Orchestrator.csproj`.
 
 ## Expected Test Projects
 
@@ -32,8 +31,14 @@ Claude/Codex must reconcile these against actual generated bundle contents and `
 - `tests/TaskTree.Modules.ReminderScheduler.Tests/TaskTree.Modules.ReminderScheduler.Tests.csproj`
 - `tests/TaskTree.Modules.SecureStore.Tests/TaskTree.Modules.SecureStore.Tests.csproj`
 - `tests/TaskTree.Modules.ComplianceCore.Tests/TaskTree.Modules.ComplianceCore.Tests.csproj`
+- `tests/TaskTree.Modules.TrayHost.Tests/TaskTree.Modules.TrayHost.Tests.csproj`
 - `tests/TaskTree.Modules.AutoUpdater.Tests/TaskTree.Modules.AutoUpdater.Tests.csproj`
 - `tests/TaskTree.Modules.BugReporter.Tests/TaskTree.Modules.BugReporter.Tests.csproj`
+- `tests/TaskTree.Modules.Settings.Tests/TaskTree.Modules.Settings.Tests.csproj`
+- `tests/TaskTree.Modules.SessionLock.Tests/TaskTree.Modules.SessionLock.Tests.csproj`
+- `tests/TaskTree.Modules.Snooze.Tests/TaskTree.Modules.Snooze.Tests.csproj`
+- `tests/TaskTree.Orchestrator.Tests/TaskTree.Orchestrator.Tests.csproj`
+- `tests/TaskTree.UI.Tests/TaskTree.UI.Tests.csproj`
 - `tests/TaskTree.Perf.Tests/TaskTree.Perf.Tests.csproj`
 - `tests/TaskTree.TestSupport/TaskTree.TestSupport.csproj`
 
@@ -43,7 +48,7 @@ Claude/Codex must reconcile these against actual generated bundle contents and `
 
 ## Known Project Reference Risks
 
-- Phase 2 generated modules may not exist in original Architecture §3.3.
+- Phase 2 generated modules may not exist in original Architecture §3.3, but the stitched checkout now contains Settings, SessionLock, and Snooze projects and their tests.
 - Phase 3 AutoUpdater / BugReporter constructors changed multiple times.
 - Phase 4 packaging references may not match final stitched project paths.
 - Test support fakes may require namespace reconciliation.
@@ -63,6 +68,6 @@ Build/test output logs must be attached during Phase 5B/5C, not Phase 5A.
 
 | Gap | Description | Target |
 |---|---|---|
-| #361 | Phase 5B must verify `TaskTree.sln` contains every expected project after stitching | Phase 5B |
-| #362 | Phase 5B must reconcile project references and namespace churn introduced by generated modules and tests | Phase 5B |
+| #361 | Phase 5B must verify `TaskTree.sln` contains every expected project after stitching | Verified statically; build proof deferred |
+| #362 | Phase 5B must reconcile project references and namespace churn introduced by generated modules and tests | Reconciled statically; build proof deferred |
 | #363 | Phase 5B/5C must attach actual command output logs after restore/build/test execution | Phase 5B / 5C |

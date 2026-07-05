@@ -78,7 +78,7 @@ Any new package must be recorded for owner review if not already source-approved
 | Gap | Description | Target |
 |---|---|---|
 | #361 | Verify `TaskTree.sln` contains every expected project after stitching | Verified statically; build proof deferred |
-| #362 | Reconcile project references and namespace churn from generated modules/tests | Partially applied; build proof deferred |
+| #362 | Reconcile project references and namespace churn from generated modules/tests | Reconciled statically; build proof deferred |
 | #374 | Any new package reference must be source-approved or documented for owner review | No new unapproved package added during current Codex pass |
 | #377 | Namespace mismatches must be reconciled and logged if file moves are required | TestSupport namespace migration applied/logged |
 | #380 | WPF/Windows-specific projects must use compatible target frameworks and properties | Verified statically |

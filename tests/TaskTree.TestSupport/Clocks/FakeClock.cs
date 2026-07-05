@@ -17,16 +17,23 @@ namespace TaskTree.TestSupport.Clocks;
 /// Deterministic <see cref="IClock"/> implementation for tests.
 /// Time advances only when <see cref="Advance"/> or <see cref="SetTo"/> is called.
 /// </summary>
-public sealed class FakeClock : IClock
+public class FakeClock : IClock
 {
     private DateTimeOffset _now;
 
+    /// <summary>Initializes the clock at the shared synthetic default epoch.</summary>
     public FakeClock() : this(new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero)) { }
 
+    /// <summary>Initializes the clock at a specific synthetic timestamp.</summary>
+    /// <param name="start">Initial UTC timestamp exposed by <see cref="UtcNow"/>.</param>
     public FakeClock(DateTimeOffset start) { _now = start; }
 
     /// <inheritdoc />
-    public DateTimeOffset UtcNow => _now;
+    public virtual DateTimeOffset UtcNow
+    {
+        get => _now;
+        set => SetTo(value);
+    }
 
     /// <summary>Advance the fake clock by the specified duration.</summary>
     public void Advance(TimeSpan by)

@@ -54,6 +54,19 @@ Files skipped: Bundle filename inventory remains unreconstructed; no local bundl
 Collision register entries: See `docs/stitching/file-collision-register.md`.
 Notes: Updated `docs/stitching/stitched-file-manifest.md` from current repo evidence and marked the Tier 2 deletion manifest deferred until the required Release build succeeds.
 
+### Sequence C-003 - Phase 5B Offline Test Backfill Continuation
+
+Bundle file: N/A - stitched repo continuation
+Phase: Phase 5B
+Applied at: 2026-07-04T22:17:31-07:00
+Applied by: Codex
+Result: Applied with build/test gate deferred
+Files added: None
+Files overwritten: None
+Files skipped: Restore/build/test execution remains unavailable until a .NET SDK is on PATH.
+Collision register entries: None.
+Notes: Backfilled offline tests for Orchestrator lifecycle, end-to-end offline provider graph, snoozed reminder delivery skip behavior, safe Ed25519 offline-import verification, TestSupport FakeClock canonicalization, expected solution inventory reconciliation, compile-register category taxonomy reconciliation, MSTest package-version alignment, direct Core test-project reference reconciliation, DI category taxonomy reconciliation, AutoUpdater `ImportLocalAsync` test reconciliation, and Phase 5B static gap-status reconciliation. Compile register/log now run through `P5B-E028` / `P5B-R026`. Marker verification and `git diff --check` pass; `dotnet restore TaskTree.sln` remains blocked by missing `dotnet`.
+
 ## Claude/Codex Gap
 
 Gap #360: Phase 5A must log bundle application order and results so future agents can reproduce or audit stitching.

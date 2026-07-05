@@ -23,12 +23,13 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
-    <PackageReference Include="MSTest.TestAdapter" Version="3.6.0" />
-    <PackageReference Include="MSTest.TestFramework" Version="3.6.0" />
+    <PackageReference Include="MSTest.TestAdapter" Version="3.6.1" />
+    <PackageReference Include="MSTest.TestFramework" Version="3.6.1" />
     <PackageReference Include="Moq" Version="4.20.72" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\TaskTree.Core\TaskTree.Core.csproj" />
     <ProjectReference Include="..\..\src\TaskTree.Modules.BugReporter\TaskTree.Modules.BugReporter.csproj" />
     <ProjectReference Include="..\TaskTree.TestSupport\TaskTree.TestSupport.csproj" />
   </ItemGroup>

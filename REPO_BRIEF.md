@@ -74,4 +74,4 @@ Use documented command paths when validating scripts. Do not install packages du
 - Confirm the true current phase status by reconciling current source/tests against the latest handoff chain; the top-level `docs/HANDOFF.md` excerpt is older than some present modules.
 - Q10: owner must provide the real PHI common-name source list before Phase 5F sign-off.
 - Q11: owner must provide or explicitly accept the support-email allowlist default before Phase 5F sign-off.
-- Verify whether a real Git repository should exist here; `git status` from `C:\dev\TaskTree` currently reports no `.git`.
+- GitHub remote currently exists at `https://github.com/dominator509/TaskTree.git`; `main` has been pushed. Continue to verify current `git status`/remote state before publish or recovery work.

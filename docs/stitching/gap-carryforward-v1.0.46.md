@@ -44,12 +44,12 @@ After bundle application, the stitched repository is the source of truth. Prior 
 | #357 | Partially applied | Current evidence inventory added; original bundle filenames remain unavailable. |
 | #358 | Applied statically | `docs/stitching/stitched-file-manifest.md` now lists verified source/test/tooling/packaging inventory. |
 | #359 | Applied for Phase 5A rows | This overlay classifies current Phase 5A gap state; earlier gaps remain carried forward unless explicitly closed elsewhere. |
-| #360 | Partially applied | `docs/stitching/bundle-application-log.md` records Codex continuation entries; original bundle application order cannot be reconstructed from absent bundle files. |
+| #360 | Partially applied | `docs/stitching/bundle-application-log.md` records Codex continuation sequences `C-001` through `C-003`; original bundle application order cannot be reconstructed from absent bundle files. |
 | #361 | Verified statically | `TaskTree.sln` includes current source/test projects; build proof remains blocked by missing .NET SDK. |
-| #362 | Partially applied | Project references and TestSupport namespace migration were reconciled statically; compile proof remains SDK-blocked. |
+| #362 | Reconciled statically | Project references, TestSupport namespace migration, namespace placement, package/import requirements, XAML pairs, duplicate full type names, and solution Debug/Release configuration rows pass static audits; compile proof remains SDK-blocked. |
 | #363 | Deferred | Restore/build/test command outputs cannot be attached locally because `dotnet` is unavailable on PATH. |
 | #364 | Deferred | No file-level hash manifest generated; target remains Phase 5F if release traceability requires it. |
-| #365 | Applied and ongoing | Compile-error register and resolution log contain current Phase 5B entries through `P5B-E012` / `P5B-R010`. |
+| #365 | Applied and ongoing | Compile-error register and resolution log contain current Phase 5B entries through `P5B-E028` / `P5B-R026`; `P5B-E002` and `P5B-E011` remain deferred behind the .NET SDK / Release-build gate. |
 | #366 | Applied | Source-of-truth hierarchy is reflected in `REPO_BRIEF.md`, latest HANDOFF delta, and the stitching inventory docs. |
 
 ## Closure Phase Classification

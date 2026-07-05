@@ -36,14 +36,22 @@ Follow-up gap:
 
 - Missing project
 - Missing package reference
+- Package version drift
+- Missing project reference
 - Missing using / namespace mismatch
 - Constructor signature drift
 - Interface contract drift
 - Enum/model mismatch
 - Test support fake mismatch
+- Test coverage drift
+- DI registration mismatch
+- Marker/verifier drift from stitched handoff deltas
+- Local environment/toolchain missing
+- Project inventory drift
 - XAML/code-behind mismatch
 - Windows-only API / target framework mismatch
 - Packaging/project path mismatch
+- Namespace / file inclusion check drift
 - Duplicate type/file collision
 - Nullable/reference-type issue
 - Access modifier / internal test seam issue
@@ -91,14 +99,14 @@ Follow-up gap: None.
 ### P5B-E002 - .NET SDK Unavailable In Current Environment
 
 Error ID: P5B-E002
-Command: `rtk dotnet restore TaskTree.sln`; `rtk dotnet --info`
+Command: `rtk dotnet restore TaskTree.sln`; `where dotnet`; standard install-path probes for `C:\Program Files\dotnet\dotnet.exe` and `C:\Program Files (x86)\dotnet\dotnet.exe`
 Configuration: N/A
 Project: Solution
 File: N/A
 Line: N/A
 Column: N/A
 Compiler error code: N/A
-Message: `rtk: Failed to resolve 'dotnet' via PATH, falling back to direct exec: Binary 'dotnet' not found on PATH`
+Message: `rtk: Failed to resolve 'dotnet' via PATH, falling back to direct exec: Binary 'dotnet' not found on PATH`; `where dotnet` finds no match; neither standard Program Files `dotnet.exe` path exists in this environment.
 Root cause category: Local environment/toolchain missing
 Proposed fix: Re-run Phase 5B restore/build commands in an environment with the .NET 8 SDK installed and available on PATH, or install/provision the SDK with owner approval.
 Status: Deferred
@@ -410,3 +418,139 @@ Proposed fix: Preserve the default embedded-key path while adding a public-key o
 Status: Resolved
 Resolution reference: P5B-R018
 Follow-up gap: Test execution remains deferred until a .NET SDK is available; the real production signing public key remains owner-owned for Phase 5F/release.
+
+### P5B-E021 - TestSupport FakeClock Canonicalization Drift
+
+Error ID: P5B-E021
+Command: Static TestSupport audit via `rtk rg -n TaskTree.TestSupport.Clocks docs tests src`, `rtk rg -n TaskTree.TestSupport tests src docs\compile`, and source inspection
+Configuration: Debug / Release
+Project: `TaskTree.TestSupport`
+File: `tests/TaskTree.TestSupport/FakeClock.cs`; `tests/TaskTree.TestSupport/Clocks/FakeClock.cs`
+Line: Class declarations
+Column: N/A
+Compiler error code: N/A
+Message: Phase 1D handoff/derivations identify `TaskTree.TestSupport.Clocks.FakeClock` as the promoted canonical helper, but later Phase 5B migrated active tests to a second root `TaskTree.TestSupport.FakeClock` implementation with independent behavior and missing XML documentation.
+Root cause category: Test support fake mismatch / duplicate type/file collision
+Proposed fix: Preserve the root namespace for active test compatibility, but make it a thin compatibility alias over the promoted `TaskTree.TestSupport.Clocks.FakeClock` implementation and add XML documentation on the public wrapper surface.
+Status: Resolved
+Resolution reference: P5B-R019
+Follow-up gap: Test execution remains deferred until a .NET SDK is available.
+
+### P5B-E022 - Expected Solution Inventory Drift
+
+Error ID: P5B-E022
+Command: Static solution inventory audit via `rtk rg --files -g *.csproj src tests`, `type TaskTree.sln`, and `type docs\stitching\expected-solution-projects.md`
+Configuration: Debug / Release
+Project: `TaskTree.sln`; stitching docs
+File: `docs/stitching/expected-solution-projects.md`
+Line: Expected Phase 2 Delta Projects; Expected Test Projects; Claude/Codex Gaps
+Column: N/A
+Compiler error code: N/A
+Message: The expected-solution inventory remained at the Phase 5A scaffold state: generated Settings/SessionLock/Snooze project paths were described generically, present UI/Orchestrator/TrayHost and generated module test projects were omitted, and a possible standalone ReminderDelivery module was still listed even though the stitched repo includes reminder delivery through `TaskTree.Orchestrator`.
+Root cause category: Missing project / project inventory drift
+Proposed fix: Reconcile the expected-solution inventory to the current stitched checkout and static `TaskTree.sln` evidence, while keeping restore/build proof deferred to the .NET SDK gate.
+Status: Resolved
+Resolution reference: P5B-R020
+Follow-up gap: Restore/build/test proof remains deferred until a .NET SDK is available.
+
+### P5B-E023 - Compile Register Category Taxonomy Drift
+
+Error ID: P5B-E023
+Command: Static compile-register audit via root-cause category inspection in `docs/compile/compile-error-register.md`
+Configuration: N/A
+Project: Compile documentation
+File: `docs/compile/compile-error-register.md`
+Line: Root Cause Categories
+Column: N/A
+Compiler error code: N/A
+Message: Several resolved register entries used root-cause categories that were not listed in the canonical category table, including marker/verifier drift, local environment/toolchain missing, test coverage drift, project inventory drift, missing project reference, and namespace/file inclusion check drift.
+Root cause category: Project inventory drift
+Proposed fix: Extend the root-cause category table to include categories already used by the current Phase 5B register entries, preserving Gap #373 category consistency.
+Status: Resolved
+Resolution reference: P5B-R021
+Follow-up gap: Restore/build/test proof remains deferred until a .NET SDK is available.
+
+### P5B-E024 - MSTest Package Version Drift
+
+Error ID: P5B-E024
+Command: Static package audit via `rtk node C:\tmp\tasktree-static-check.js` and `findstr /n /c:"MSTest.TestAdapter" /c:"MSTest.TestFramework" tests\TaskTree.Core.Tests\TaskTree.Core.Tests.csproj tests\TaskTree.Modules.SecureStore.Tests\TaskTree.Modules.SecureStore.Tests.csproj tests\TaskTree.Modules.BugReporter.Tests\TaskTree.Modules.BugReporter.Tests.csproj`
+Configuration: Debug / Release
+Project: `TaskTree.Core.Tests`; `TaskTree.Modules.SecureStore.Tests`; `TaskTree.Modules.BugReporter.Tests`
+File: `tests/TaskTree.Core.Tests/TaskTree.Core.Tests.csproj`; `tests/TaskTree.Modules.SecureStore.Tests/TaskTree.Modules.SecureStore.Tests.csproj`; `tests/TaskTree.Modules.BugReporter.Tests/TaskTree.Modules.BugReporter.Tests.csproj`
+Line: MSTest package references
+Column: N/A
+Compiler error code: N/A
+Message: Three older test projects still referenced `MSTest.TestAdapter` and `MSTest.TestFramework` `3.6.0` while the rest of the stitched test graph had already moved to `3.6.1`, leaving the test package graph split during restore/test discovery.
+Root cause category: Package version drift
+Proposed fix: Align the older MSTest package references to the repo's current `3.6.1` test baseline without adding new packages or changing test behavior.
+Status: Resolved
+Resolution reference: P5B-R022
+Follow-up gap: Restore/build/test proof remains deferred until a .NET SDK is available.
+
+### P5B-E025 - Test Project Direct Core Reference Drift
+
+Error ID: P5B-E025
+Command: Static using/project-reference audit via `rtk node C:\tmp\tasktree-using-reference-check.js`
+Configuration: Debug / Release
+Project: `TaskTree.Modules.BugReporter.Tests`; `TaskTree.Modules.SecureStore.Tests`
+File: `tests/TaskTree.Modules.BugReporter.Tests/TaskTree.Modules.BugReporter.Tests.csproj`; `tests/TaskTree.Modules.SecureStore.Tests/TaskTree.Modules.SecureStore.Tests.csproj`
+Line: ProjectReference item group
+Column: N/A
+Compiler error code: N/A
+Message: BugReporter and SecureStore test source files import `TaskTree.Core.*` namespaces directly, but their test project files relied on transitive module references instead of direct `TaskTree.Core` references.
+Root cause category: Missing project reference
+Proposed fix: Add explicit `ProjectReference` entries to `src/TaskTree.Core/TaskTree.Core.csproj` in the affected test projects.
+Status: Resolved
+Resolution reference: P5B-R023
+Follow-up gap: Restore/build/test proof remains deferred until a .NET SDK is available.
+
+### P5B-E026 - Compile Register DI Category Drift
+
+Error ID: P5B-E026
+Command: Static compile-register category audit via `rtk node C:\tmp\tasktree-category-check.js`
+Configuration: N/A
+Project: Compile documentation
+File: `docs/compile/compile-error-register.md`
+Line: Root Cause Categories
+Column: N/A
+Compiler error code: N/A
+Message: Current Phase 5B entries used `DI registration mismatch` as a root-cause category, but the canonical category table did not list that category.
+Root cause category: Project inventory drift
+Proposed fix: Add `DI registration mismatch` to the compile-register root-cause category table to preserve Gap #373 category consistency.
+Status: Resolved
+Resolution reference: P5B-R024
+Follow-up gap: Restore/build/test proof remains deferred until a .NET SDK is available.
+
+### P5B-E027 - AutoUpdater ImportLocalAsync Test Drift
+
+Error ID: P5B-E027
+Command: Static updater test audit via `rtk rg -n ImportLocalAsync src tests docs\spec-derivations docs\compile Roadmap.md Architecture.md`
+Configuration: Debug / Release
+Project: `TaskTree.Modules.AutoUpdater.Tests`
+File: `tests/TaskTree.Modules.AutoUpdater.Tests/AutoUpdaterTests.cs`
+Line: `ImportLocalAsync_MissingBundle_ThrowsFileNotFound`
+Column: N/A
+Compiler error code: N/A
+Message: `AutoUpdater.ImportLocalAsync` is now implemented against `OfflineImportService`, but an older test still expected a Phase 3C deferred `NotImplementedException`.
+Root cause category: Test coverage drift
+Proposed fix: Update the stale test to assert current offline import behavior for a missing local bundle (`FileNotFoundException`) while preserving the Phase 5E `ApplyAsync` live MSIX stub expectation.
+Status: Resolved
+Resolution reference: P5B-R025
+Follow-up gap: Restore/build/test proof remains deferred until a .NET SDK is available.
+
+### P5B-E028 - Phase 5B Static Gap Status Drift
+
+Error ID: P5B-E028
+Command: Static gap-status audit via `rtk rg -n Partially docs\compile docs\stitching docs\HANDOFF-v1.0.48-delta.md REPO_BRIEF.md`, `rtk node C:\tmp\tasktree-static-check.js`, `rtk node C:\tmp\tasktree-using-reference-check.js`, `rtk node C:\tmp\tasktree-package-import-check.js`, `rtk node C:\tmp\tasktree-duplicate-type-check.js`, `rtk node C:\tmp\tasktree-xaml-check.js`, and `rtk node C:\tmp\tasktree-sln-check.js`
+Configuration: N/A
+Project: Compile documentation
+File: `docs/compile/project-reference-reconciliation.md`; `docs/compile/phase5b-compile-closure-plan.md`; `docs/stitching/expected-solution-projects.md`; `docs/stitching/gap-carryforward-v1.0.46.md`
+Line: Phase 5B gap status tables
+Column: N/A
+Compiler error code: N/A
+Message: Several Phase 5B gap rows still said `Partially applied` even though current static audits now prove project/reference, namespace, package/import, XAML/code-behind, duplicate full-type, DI status, and solution Debug/Release configuration reconciliation. Build proof remains separately blocked by the missing SDK.
+Root cause category: Project inventory drift
+Proposed fix: Update the affected status rows to `Reconciled statically; build proof deferred` or equivalent precise wording, without claiming Phase 5B acceptance.
+Status: Resolved
+Resolution reference: P5B-R026
+Follow-up gap: Restore/build/test proof remains deferred until a .NET SDK is available.

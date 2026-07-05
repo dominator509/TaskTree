@@ -66,7 +66,7 @@ The checkout contains stitched outputs and phase evidence, not the original exte
 | Bundle application order | Preserved as planned order | See Application Order above and `docs/HANDOFF-v1.0.46-delta.md`. |
 | Stitched file inventory | Applied | See `docs/stitching/stitched-file-manifest.md`. |
 | Collision register | Partially applied | TestSupport duplicate and obsolete Tier 2 window pair are recorded in `docs/stitching/file-collision-register.md`. |
-| Application log | Partially applied | Codex continuation entries are recorded in `docs/stitching/bundle-application-log.md`. |
+| Application log | Partially applied | Codex continuation sequences `C-001` through `C-003` are recorded in `docs/stitching/bundle-application-log.md`; original bundle order remains unreconstructed without the source bundles. |
 | Restore/build/test outputs | Deferred | Blocked locally by missing .NET SDK; see `docs/compile/compile-error-register.md` entry `P5B-E002`. |
 
 ## Known Regeneration / Supersession Notes
