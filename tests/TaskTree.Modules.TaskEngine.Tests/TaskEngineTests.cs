@@ -8,7 +8,6 @@
 //  D10 anti-drift: XML doc on every test class.
 // ─────────────────────────────────────────────────────────────────────────────
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -17,6 +16,7 @@ using TaskTree.Core.Abstractions;
 using TaskTree.Core.Enums;
 using TaskTree.Core.Models;
 using TaskTree.Modules.TaskEngine;
+using TaskTree.TestSupport;
 
 namespace TaskTree.Modules.TaskEngine.Tests;
 
@@ -28,7 +28,7 @@ namespace TaskTree.Modules.TaskEngine.Tests;
 /// <remarks>
 /// SPEC-DERIVED-PHASE1A: this test file inherits the 7 behavioral derivations
 /// declared in TaskEngine.cs and additionally introduces test infrastructure
-/// conventions (inline FakeClock + InMemorySecureStore; Moq-mocked
+/// conventions (shared FakeClock + InMemorySecureStore; Moq-mocked
 /// IComplianceCore + IAppLogger) recorded as derivation §8 in
 /// docs/spec-derivations/PHASE1A-DERIVATIONS.md.
 /// </remarks>
@@ -36,25 +36,6 @@ namespace TaskTree.Modules.TaskEngine.Tests;
 public sealed class TaskEngineTests
 {
     // ─── Test infrastructure (private nested types) ─────────────────────────
-
-    private sealed class FakeClock : IClock
-    {
-        public DateTimeOffset UtcNow { get; set; } = DateTimeOffset.Parse("2026-01-01T00:00:00Z");
-    }
-
-    private sealed class InMemorySecureStore : ISecureStore
-    {
-        private readonly Dictionary<string, object?> _data = new();
-        public Task<T?> LoadAsync<T>(string key) where T : class
-            => Task.FromResult(_data.TryGetValue(key, out var v) ? (T?)v : null);
-        public Task SaveAsync<T>(string key, T value) where T : class
-        {
-            _data[key] = value;
-            return Task.CompletedTask;
-        }
-        public Task<bool> ExistsAsync(string key) => Task.FromResult(_data.ContainsKey(key));
-        public Task DeleteAsync(string key) { _data.Remove(key); return Task.CompletedTask; }
-    }
 
     private sealed class TestContext
     {
@@ -68,7 +49,7 @@ public sealed class TaskEngineTests
 
     private static TestContext CreateEngine()
     {
-        var store = new InMemorySecureStore();
+        var store = new InMemorySecureStore(preserveObjectReferences: true);
         var clock = new FakeClock();
         var audit = new List<AuditEntry>();
         var compliance = new Mock<IComplianceCore>();

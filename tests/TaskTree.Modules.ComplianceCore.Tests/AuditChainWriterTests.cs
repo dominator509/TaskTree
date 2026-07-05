@@ -6,12 +6,10 @@
 //  D1 anti-drift: header cites Architecture.md sections.
 //  D6 anti-drift: all test data is synthetic, non-PHI-shaped.
 //  D10 anti-drift: XML doc on every test class.
-//  NOTE: inline InMemorySecureStore + FakeClock follow PHASE1A §8 conventions
-//    (also used in ComplianceCoreTests Msg 4 — 2nd consumer; promotion to
-//    shared TestDoubles location deferred to Phase 1D Msg 1).
+//  NOTE: shared InMemorySecureStore + FakeClock follow PHASE1A §8 conventions
+//    Shared helper usage is part of the Phase 5A/5B TestSupport migration.
 // ─────────────────────────────────────────────────────────────────────────────
 using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
@@ -19,6 +17,7 @@ using TaskTree.Core.Abstractions;
 using TaskTree.Core.Models;
 using TaskTree.Core.Security;
 using TaskTree.Modules.ComplianceCore;
+using TaskTree.TestSupport;
 
 namespace TaskTree.Modules.ComplianceCore.Tests;
 
@@ -32,31 +31,12 @@ namespace TaskTree.Modules.ComplianceCore.Tests;
 [TestClass]
 public sealed class AuditChainWriterTests
 {
-    // ─── Inline test doubles (same pattern as ComplianceCoreTests Msg 4) ──
-
-    private sealed class FakeClock : IClock
-    {
-        public DateTimeOffset UtcNow { get; set; } = DateTimeOffset.Parse("2026-01-01T00:00:00Z");
-    }
-
-    private sealed class InMemorySecureStore : ISecureStore
-    {
-        private readonly Dictionary<string, object?> _data = new();
-        public Task<T?> LoadAsync<T>(string key) where T : class
-            => Task.FromResult(_data.TryGetValue(key, out var v) ? (T?)v : null);
-        public Task SaveAsync<T>(string key, T value) where T : class
-        {
-            _data[key] = value;
-            return Task.CompletedTask;
-        }
-        public Task<bool> ExistsAsync(string key) => Task.FromResult(_data.ContainsKey(key));
-        public Task DeleteAsync(string key) { _data.Remove(key); return Task.CompletedTask; }
-    }
+    // Shared TestSupport helpers.
 
     private static AuditChainWriter CreateWriter()
     {
-        var store = new InMemorySecureStore();
-        var clock = new FakeClock();
+        var store = new TaskTree.TestSupport.InMemorySecureStore(preserveObjectReferences: true);
+        var clock = new TaskTree.TestSupport.FakeClock();
         var logger = new Mock<IAppLogger>();
         return new AuditChainWriter(store, clock, logger.Object);
     }

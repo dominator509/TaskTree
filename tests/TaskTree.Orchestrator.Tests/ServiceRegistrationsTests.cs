@@ -74,6 +74,9 @@ public class ServiceRegistrationsTests
         Assert.IsTrue(registered.Contains(typeof(IReminderScheduler)));
         Assert.IsTrue(registered.Contains(typeof(ITrayHost)));
         Assert.IsTrue(registered.Contains(typeof(IReminderDeliveryService)));
+        Assert.IsTrue(registered.Contains(typeof(ISettingsService)));
+        Assert.IsTrue(registered.Contains(typeof(ISessionLockService)));
+        Assert.IsTrue(registered.Contains(typeof(ISnoozeService)));
         Assert.IsTrue(registered.Contains(typeof(IOrchestrator)));
     }
 
@@ -117,10 +120,8 @@ public class ServiceRegistrationsTests
     }
 
     [TestMethod, TestCategory("Offline")]
-    public void BuildServiceProvider_ResolvesIReminderDeliveryService_AsPlaceholder()
+    public void BuildServiceProvider_ResolvesIReminderDeliveryService_NoMissingDeps()
     {
-        // Phase 1F-only stub; Phase 1G replaces.
-        // TG1F-11: skip type-name assert (Placeholder is internal).
         using var provider = BuildOverriddenServices().BuildServiceProvider(validateScopes: true);
         var delivery = provider.GetRequiredService<IReminderDeliveryService>();
         Assert.IsNotNull(delivery);

@@ -296,3 +296,74 @@ Tests/build commands re-run:
 Command output reference: Static checks passed; Debug/Release build remains unverified locally because no .NET SDK is available on PATH.
 Follow-up gap created/updated: `P5B-E002` remains the environment blocker for restore/build/test proof.
 Reviewer/owner note: Re-run restore/build in a .NET SDK environment to confirm no additional warning-as-error issues remain.
+
+### P5B-R012 - Shared TestSupport Consumer Reconciliation
+
+Resolution ID: P5B-R012
+Related compile error ID(s): P5B-E014
+File(s) changed:
+- `tests/TaskTree.TestSupport/InMemorySecureStore.cs`
+- `tests/TaskTree.Modules.TaskEngine.Tests/TaskEngineTests.cs`
+- `tests/TaskTree.Modules.ComplianceCore.Tests/ComplianceCoreTests.cs`
+- `tests/TaskTree.Modules.ComplianceCore.Tests/AuditChainWriterTests.cs`
+- `docs/compile/compile-error-register.md`
+- `docs/compile/compile-resolution-log.md`
+Change summary: Moved active TaskEngine and ComplianceCore test construction paths to the canonical `TaskTree.TestSupport` helpers and added an explicit by-reference mode to the shared in-memory store for migrated private-DTO/tamper tests.
+Exact rationale: `docs/Phase5A-using-migration-manifest.md` requires the promoted TestSupport helpers to be used by the stitched test graph. TaskEngine and ComplianceCore tests still carried inline helpers. The shared store's default JSON-backed behavior is correct for most consumers, but the migrated TaskEngine and ComplianceCore test paths previously used by-reference storage for private DTOs and tamper inspection.
+Why this is compile-closure only: The edit is test-support reconciliation only. It does not change production APIs, production storage, audit chain logic, redaction behavior, package references, or live integrations.
+Why runtime behavior is unchanged or minimally changed: Default `InMemorySecureStore` behavior remains JSON-backed. Only migrated tests that explicitly request `preserveObjectReferences: true` get the old by-reference semantics from their former inline helpers.
+Regression risk: Low to medium; helper behavior is shared across tests, so the default path was preserved and the special mode is opt-in.
+Tests/build commands re-run:
+- `rtk rg -n FakeClock tests`
+- `rtk rg -n InMemorySecureStore tests`
+- `rtk powershell -NoProfile -ExecutionPolicy Bypass -File tools/find-spec-derivations.ps1 -Root .`
+- `rtk git diff --check`
+Command output reference: Static checks should show active TaskEngine and AuditChainWriter construction using `TaskTree.TestSupport`; full Debug/Release compile proof remains unavailable locally because no .NET SDK is available on PATH.
+Follow-up gap created/updated: `P5B-E002` remains the environment blocker for restore/build/test proof.
+Reviewer/owner note: Re-run SDK-backed tests before final Phase 5B sign-off.
+
+### P5B-R013 - Packaging WAP Generated Module Reference Reconciliation
+
+Resolution ID: P5B-R013
+Related compile error ID(s): P5B-E015
+File(s) changed:
+- `packaging/TaskTree.Installer.wapproj`
+- `docs/compile/compile-error-register.md`
+- `docs/compile/compile-resolution-log.md`
+- `docs/compile/phase5b-compile-closure-plan.md`
+- `docs/compile/project-reference-reconciliation.md`
+Change summary: Added explicit WAP project references for the generated Settings, SessionLock, and Snooze modules.
+Exact rationale: Phase 5B had already reconciled `TaskTree.App.csproj` and the solution to include these generated modules. Gap #319 in `docs/signing-checklist.md` requires the final `.wapproj` project references to be reconciled against stitched repo projects. The packaging scaffold still listed only the older module set.
+Why this is compile-closure only: The edit only aligns the packaging project graph with existing projects already used by the app composition root. It does not change product source code, package signing, install behavior, certificates, or live packaging commands.
+Why runtime behavior is unchanged or minimally changed: Runtime DI and app project references were already present; the packaging project now names the same module projects explicitly.
+Regression risk: Low to medium; WAP tooling may still need Phase 5E normalization, but missing generated modules are no longer hidden in the packaging graph.
+Tests/build commands re-run:
+- `rtk rg -n ProjectReference packaging`
+- `rtk powershell -NoProfile -ExecutionPolicy Bypass -File tools/find-spec-derivations.ps1 -Root .`
+- `rtk git diff --check`
+Command output reference: Static checks should show all generated module references present. Real WAP/MSIX validation remains unavailable locally without the .NET/MSIX toolchain.
+Follow-up gap created/updated: Gap #319 is statically reconciled; Phase 5E gaps #318/#320 remain for Windows MSIX tooling/signing/install proof.
+Reviewer/owner note: Re-run packaging validation with MSIX tooling in Phase 5E.
+
+### P5B-R014 - DI Registration Test Coverage Alignment
+
+Resolution ID: P5B-R014
+Related compile error ID(s): P5B-E016
+File(s) changed:
+- `tests/TaskTree.Orchestrator.Tests/ServiceRegistrationsTests.cs`
+- `docs/compile/compile-error-register.md`
+- `docs/compile/compile-resolution-log.md`
+- `docs/compile/phase5b-compile-closure-plan.md`
+Change summary: Extended the DI registration test to assert Settings, SessionLock, and Snooze service registrations, and renamed the reminder delivery resolution test to remove stale placeholder wording.
+Exact rationale: The app composition root now constructs `SettingsService`, `SessionLockService`, `SnoozeService`, the real `ReminderDeliveryService`, and an `Orchestrator` that depends on the newer interfaces. Phase 5B constructor/DI reconciliation should keep the container test aligned with the current graph.
+Why this is compile-closure only: The edit changes only test assertions/naming to match the existing production DI graph. No production behavior, package references, or runtime code changed.
+Why runtime behavior is unchanged or minimally changed: The app already registers these services. The test now checks the current registrations instead of the earlier subset.
+Regression risk: Low; the test may expose missing DI registration regressions earlier, which is intended for Phase 5B.
+Tests/build commands re-run:
+- `rtk git grep -n ISettingsService tests/TaskTree.Orchestrator.Tests/ServiceRegistrationsTests.cs`
+- `rtk git grep -n ISessionLockService tests/TaskTree.Orchestrator.Tests/ServiceRegistrationsTests.cs`
+- `rtk git grep -n ISnoozeService tests/TaskTree.Orchestrator.Tests/ServiceRegistrationsTests.cs`
+- `rtk git diff --check`
+Command output reference: Static grep should show all three newer interfaces covered; real test execution remains unavailable without the .NET SDK.
+Follow-up gap created/updated: `P5B-E002` remains the restore/build/test environment blocker.
+Reviewer/owner note: Re-run `dotnet test` in an SDK environment before Phase 5B sign-off.

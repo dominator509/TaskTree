@@ -19,7 +19,7 @@
 | Generated test projects | Verified statically | `tests/**/*.csproj` contains Core/module tests, UI/Orchestrator tests, generated Settings/SessionLock/Snooze tests, perf tests, and TestSupport. |
 | `TaskTree.Perf.Tests` solution inclusion | Verified statically | `TaskTree.sln` includes `tests\TaskTree.Perf.Tests\TaskTree.Perf.Tests.csproj`. |
 | `TaskTree.TestSupport` solution inclusion | Verified statically | `TaskTree.sln` includes `tests\TaskTree.TestSupport\TaskTree.TestSupport.csproj`. |
-| Packaging project path | Verified path only | `packaging/TaskTree.Installer.wapproj`, `Package.appxmanifest`, and `build-msix.ps1` exist; packaging build is Phase 5E-scoped. |
+| Packaging project path | Reconciled statically | `packaging/TaskTree.Installer.wapproj`, `Package.appxmanifest`, and `build-msix.ps1` exist. WAP now explicitly references generated Settings, SessionLock, and Snooze modules; packaging build remains Phase 5E-scoped. |
 | Phase 2 generated module references from app | Verified statically | `TaskTree.App.csproj` references Settings, SessionLock, and Snooze after Phase 5B reconciliation. |
 | WPF project properties | Verified statically | App, UI, and Orchestrator projects use `net8.0-windows`/`UseWPF`. |
 | XAML/code-behind class names | Verified statically | `x:Class` and partial classes were checked for App, MainWindow, ReminderToast, and ToastTier2Window. |

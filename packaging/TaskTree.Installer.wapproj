@@ -32,6 +32,9 @@
     <ProjectReference Include="..\src\TaskTree.Modules.SecureStore\TaskTree.Modules.SecureStore.csproj" />
     <ProjectReference Include="..\src\TaskTree.Modules.ComplianceCore\TaskTree.Modules.ComplianceCore.csproj" />
     <ProjectReference Include="..\src\TaskTree.Modules.TrayHost\TaskTree.Modules.TrayHost.csproj" />
+    <ProjectReference Include="..\src\TaskTree.Modules.Settings\TaskTree.Modules.Settings.csproj" />
+    <ProjectReference Include="..\src\TaskTree.Modules.SessionLock\TaskTree.Modules.SessionLock.csproj" />
+    <ProjectReference Include="..\src\TaskTree.Modules.Snooze\TaskTree.Modules.Snooze.csproj" />
     <ProjectReference Include="..\src\TaskTree.Modules.AutoUpdater\TaskTree.Modules.AutoUpdater.csproj" />
     <ProjectReference Include="..\src\TaskTree.Modules.BugReporter\TaskTree.Modules.BugReporter.csproj" />
   </ItemGroup>

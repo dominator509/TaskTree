@@ -291,3 +291,54 @@ Proposed fix: Preserve constructor null validation without retaining unused priv
 Status: Resolved
 Resolution reference: P5B-R011
 Follow-up gap: Build verification remains deferred to an environment with the .NET SDK available.
+
+### P5B-E014 - Shared TestSupport Migration Drift
+
+Error ID: P5B-E014
+Command: Static Phase 5A/5B migration audit via `rtk rg -n FakeClock tests src`, `rtk rg -n InMemorySecureStore tests src`, and `docs/Phase5A-using-migration-manifest.md`
+Configuration: Debug / Release
+Project: `TaskTree.Modules.TaskEngine.Tests`; `TaskTree.Modules.ComplianceCore.Tests`; `TaskTree.TestSupport`
+File: `tests/TaskTree.Modules.TaskEngine.Tests/TaskEngineTests.cs`; `tests/TaskTree.Modules.ComplianceCore.Tests/ComplianceCoreTests.cs`; `tests/TaskTree.Modules.ComplianceCore.Tests/AuditChainWriterTests.cs`; `tests/TaskTree.TestSupport/InMemorySecureStore.cs`
+Line: Inline/private test double declarations and shared helper surface
+Column: N/A
+Compiler error code: Duplicate type/file collision risk / test support fake mismatch
+Message: Phase 5A's shared TestSupport migration still had live inline `FakeClock`/`InMemorySecureStore` consumers in TaskEngine and ComplianceCore test files after the promoted `TaskTree.TestSupport` project was present. The migrated TaskEngine and ComplianceCore tests required the old by-reference storage semantics for private DTOs and tamper inspection, while the shared JSON-backed helper did not expose that mode.
+Root cause category: Test support fake mismatch / duplicate type/file collision
+Proposed fix: Migrate active TaskEngine and ComplianceCore test construction paths to `TaskTree.TestSupport`; extend `InMemorySecureStore` with an explicit object-reference preservation mode for migrated private-DTO/tamper tests while preserving JSON round-trip behavior by default; remove obsolete inline doubles without changing test behavior.
+Status: Resolved
+Resolution reference: P5B-R012
+Follow-up gap: Build/test verification remains deferred to an environment with the .NET SDK available.
+
+### P5B-E015 - Packaging WAP Generated Module Reference Drift
+
+Error ID: P5B-E015
+Command: Static packaging project-reference audit via `rtk rg -n ProjectReference packaging src tests`, `rtk rg -n Settings docs packaging src\TaskTree.App`, `rtk rg -n SessionLock docs packaging src\TaskTree.App`, and `rtk rg -n Snooze docs packaging src\TaskTree.App`
+Configuration: Release / Packaging
+Project: `TaskTree.Installer`
+File: `packaging/TaskTree.Installer.wapproj`
+Line: ProjectReference item group
+Column: N/A
+Compiler error code: Packaging/project path mismatch
+Message: `TaskTree.App.csproj` and `ServiceRegistrations` now include generated Settings, SessionLock, and Snooze modules, and Gap #319 requires final `.wapproj` project references to be reconciled against stitched repo projects. The packaging project still listed the earlier module set and omitted these generated modules.
+Root cause category: Packaging/project path mismatch
+Proposed fix: Add explicit `ProjectReference` entries for `TaskTree.Modules.Settings`, `TaskTree.Modules.SessionLock`, and `TaskTree.Modules.Snooze` to `packaging/TaskTree.Installer.wapproj` without changing signing or live packaging behavior.
+Status: Resolved
+Resolution reference: P5B-R013
+Follow-up gap: Phase 5E still owns MSIX/WAP tooling validation, signing, install, and package execution proof.
+
+### P5B-E016 - DI Registration Test Coverage Drift
+
+Error ID: P5B-E016
+Command: Static DI/test audit via `rtk git grep -n Orchestrator -- tests src`, `rtk git grep -n ReminderDeliveryService -- tests src`, and source inspection
+Configuration: Debug / Release
+Project: `TaskTree.Orchestrator.Tests`
+File: `tests/TaskTree.Orchestrator.Tests/ServiceRegistrationsTests.cs`
+Line: `AddTaskTreeServices_RegistersAllRequiredInterfaces`; `BuildServiceProvider_ResolvesIReminderDeliveryService_*`
+Column: N/A
+Compiler error code: N/A
+Message: The DI registration test still validated the earlier Phase 1F/1G service set and named reminder delivery as a placeholder even after Settings, SessionLock, Snooze, and the real `ReminderDeliveryService` became constructor dependencies in the app graph.
+Root cause category: Constructor signature drift / DI registration mismatch
+Proposed fix: Assert that `ISettingsService`, `ISessionLockService`, and `ISnoozeService` are registered, and rename the reminder-delivery provider test away from the stale placeholder wording.
+Status: Resolved
+Resolution reference: P5B-R014
+Follow-up gap: Build/test execution remains deferred until a .NET SDK is available.

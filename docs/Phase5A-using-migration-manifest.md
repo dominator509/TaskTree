@@ -62,4 +62,5 @@ Phase 5A action sequence (run from repo root):
 
 - Remaining old namespace consumer found in `tests/TaskTree.Modules.ReminderScheduler.Tests/ReminderSchedulerTests.cs` and migrated to `TaskTree.TestSupport`.
 - Obsolete old-location files were deleted after confirming `tests/TaskTree.TestSupport/` contains the promoted replacements and dependent test projects already reference `TaskTree.TestSupport`.
+- Follow-up Phase 5B migration pass moved active `TaskEngineTests`, `AuditChainWriterTests`, and `ComplianceCoreTests` construction paths to shared `TaskTree.TestSupport` helpers with explicit by-reference store mode where required to preserve the former inline helper semantics.
 - Build/test verification is still pending a local .NET SDK; see `docs/compile/compile-error-register.md` entry `P5B-E002`.
