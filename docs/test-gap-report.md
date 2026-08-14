@@ -9,6 +9,7 @@
 - `rtk C:\Users\domin\.dotnet\dotnet.exe test TaskTree.sln -c Debug --no-build --filter TestCategory!=Live`: passed, 14 assemblies, 341 tests, 0 failures, 0 skips.
 - `rtk C:\Users\domin\.dotnet\dotnet.exe build TaskTree.sln -c Release --no-restore`: passed, 0 warnings, 0 errors.
 - `rtk C:\Users\domin\.dotnet\dotnet.exe test TaskTree.sln -c Release --no-build --filter TestCategory!=Live`: passed, 14 assemblies, 341 tests, 0 failures, 0 skips.
+- Coverage attempt: `--collect:"XPlat Code Coverage"` ran the suite successfully but VSTest reported `Could not find data collector 'XPlat Code Coverage'`; no coverage artifact or percentage was produced.
 - `git diff --check`: passed.
 - Live/provider tests were intentionally excluded and were not represented as green.
 
