@@ -11,6 +11,7 @@ using CommunityToolkit.Mvvm.Input;
 using TaskTree.Core.Abstractions;
 using TaskTree.Core.Enums;
 using TaskTree.Core.Models;
+using TaskStatus = TaskTree.Core.Enums.TaskStatus;
 
 namespace TaskTree.UI.ViewModels
 {

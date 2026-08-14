@@ -88,7 +88,7 @@ public sealed class AesGcmCryptoProvider : ICryptoProvider
     /// <param name="key">32-byte AES-256 key.</param>
     /// <param name="associatedData">Associated data supplied at encryption time (must match exactly).</param>
     /// <returns>The recovered plaintext.</returns>
-    /// <exception cref="CryptographicException">Thrown by <see cref="AesGcm.Decrypt"/> on tag mismatch.</exception>
+    /// <exception cref="CryptographicException">Thrown by <see cref="AesGcm"/> decryption on tag mismatch.</exception>
     public byte[] Decrypt(byte[] ciphertextWithNonceAndTag, byte[] key, byte[]? associatedData = null)
     {
         ArgumentNullException.ThrowIfNull(ciphertextWithNonceAndTag);

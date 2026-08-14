@@ -23,8 +23,7 @@ namespace TaskTree.Modules.ComplianceCore.Tests;
 
 /// <summary>
 /// Verifies <see cref="ComplianceCore"/> wiring per §4.6 and the audit chain
-/// pipeline per §10.5 (P1C-AC1, AC2, AC5, plus the <c>StartIdleMonitor</c>
-/// stub per Roadmap 1C anti-drift D5).
+/// pipeline per §10.5 (P1C-AC1, AC2, AC5, plus the Win32-backed <c>StartIdleMonitor</c>).
 /// </summary>
 /// <remarks>
 /// SPEC-DERIVED-PHASE1C: this test class verifies derivations §1
@@ -151,15 +150,13 @@ public sealed class ComplianceCoreTests
         Assert.AreEqual(64, e.Hash.Length);
     }
 
-    /// <summary>Roadmap 1C Anti-Drift D5: StartIdleMonitor throws NotImplementedException (Deferred to Phase 2F).</summary>
+    /// <summary>Starts and restarts the Win32-backed idle monitor.</summary>
     [TestMethod]
-    public void StartIdleMonitor_ThrowsNotImplementedException()
+    public void StartIdleMonitor_ValidTimeout_StartsWithoutThrowing()
     {
         var ctx = CreateContext();
 
-        var ex = Assert.ThrowsException<NotImplementedException>(
-            () => ctx.Core.StartIdleMonitor(TimeSpan.FromMinutes(15)));
-
-        StringAssert.Contains(ex.Message, "Phase 2F");
+        ctx.Core.StartIdleMonitor(TimeSpan.FromMinutes(15));
+        ctx.Core.StartIdleMonitor(TimeSpan.FromMinutes(15));
     }
 }

@@ -58,13 +58,13 @@ TaskTree is designed to be HIPAA-aware by default. Compliance Mode semantics mus
 
 ## Update Process
 
-Updater scaffolding includes manifest verification, package hash verification, staging, offline import, and rollback planning. Live HTTP check/download, MSIX apply, and rollback restore remain Phase 5E validation items.
+Updater code includes HTTPS manifest verification, opt-in package download, hash-verified staging, offline import, MSIX apply, and rollback. Provider/package execution still requires Phase 5E environment validation.
 
 ## BugReporter Delivery Modes
 
 - FileDrop: local redacted JSON output.
-- Email: HIGH stub until SMTP configuration is implemented.
-- GitHub: HIGH stub until GitHub REST/PAT configuration is implemented.
+- Email: runtime-configured SMTP; missing or incomplete settings fail closed.
+- GitHub: runtime-configured GitHub Issues REST delivery; missing settings fail closed.
 
 ## Troubleshooting
 

@@ -4,12 +4,14 @@
 //  Architecture.md References: §4.6, §10.5, §10.7, §10.4, §9.2.3, §3.3
 //  Roadmap.md References: Phase 1C — ComplianceCore baseline (Msg 1 of 5)
 //  D1 anti-drift: header cites Architecture.md sections.
-//  D5 anti-drift: StartIdleMonitor throws NotImplementedException("Deferred to Phase 2F").
+//  D5 anti-drift: StartIdleMonitor is backed by the Win32 idle/input APIs.
 //  D10 anti-drift: XML doc on every public member.
 //  Forward-references: PhiRedactor (Msg 2) and AuditChainWriter (Msg 3) ship later this phase.
 // ─────────────────────────────────────────────────────────────────────────────
 using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
+using System.Threading;
 using System.Threading.Tasks;
 using TaskTree.Core.Abstractions;
 using TaskTree.Core.Models;
@@ -20,8 +22,8 @@ namespace TaskTree.Modules.ComplianceCore;
 /// HIPAA technical-safeguards orchestrator implementing
 /// <see cref="IComplianceCore"/> per Architecture §4.6. Delegates audit chain
 /// operations to <c>AuditChainWriter</c> (Msg 3) and PHI redaction to
-/// <c>PhiRedactor</c> (Msg 2). Idle monitor is stubbed per Roadmap 1C — full
-/// implementation arrives in Phase 2F.
+/// <c>PhiRedactor</c> (Msg 2). The idle monitor uses Win32 input telemetry and
+/// requests a workstation lock when the configured timeout expires.
 /// </summary>
 /// <remarks>
 /// SPEC-DERIVED-PHASE1C: surface not specified verbatim in Architecture.md;
@@ -37,16 +39,30 @@ namespace TaskTree.Modules.ComplianceCore;
 /// (8) <see cref="RedactPhi"/> null/empty contract: <c>null</c> → <c>string.Empty</c>;
 ///     <c>""</c> → <c>""</c>.
 /// </para>
-/// <para>
-/// Idle monitor: <see cref="StartIdleMonitor"/> throws
-/// <see cref="NotImplementedException"/> per Roadmap 1C anti-drift constraint.
-/// Full Win32 <c>GetLastInputInfo</c> wiring ships in Phase 2F.
-/// </para>
 /// </remarks>
-public sealed class ComplianceCore : IComplianceCore
+public sealed class ComplianceCore : IComplianceCore, IDisposable
 {
     private readonly PhiRedactor _redactor;
     private readonly AuditChainWriter _auditWriter;
+    private readonly IAppLogger _logger;
+    private Timer? _idleTimer;
+    private TimeSpan _idleTimeout;
+    private int _idleTriggered;
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct LastInputInfo
+    {
+        public uint Size;
+        public uint TickCount;
+    }
+
+    [DllImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool GetLastInputInfo(ref LastInputInfo info);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool LockWorkStation();
 
     /// <summary>
     /// Initializes a new <see cref="ComplianceCore"/>. All five dependencies
@@ -70,14 +86,13 @@ public sealed class ComplianceCore : IComplianceCore
         ArgumentNullException.ThrowIfNull(store);
         ArgumentNullException.ThrowIfNull(clock);
         ArgumentNullException.ThrowIfNull(logger);
+        _logger = logger;
         _redactor = redactor ?? throw new ArgumentNullException(nameof(redactor));
         _auditWriter = auditWriter ?? throw new ArgumentNullException(nameof(auditWriter));
     }
 
     /// <summary>
-    /// Raised when the idle monitor exceeds the configured timeout. NOT raised
-    /// in Phase 1C — the idle monitor itself is stubbed (Derivation 1; Phase 2F
-    /// finishes the wiring).
+    /// Raised when the idle monitor exceeds the configured timeout.
     /// </summary>
     public event EventHandler? AutoLogoffTriggered;
 
@@ -103,25 +118,52 @@ public sealed class ComplianceCore : IComplianceCore
     /// Starts the OS idle monitor with the supplied inactivity threshold.
     /// </summary>
     /// <remarks>
-    /// Phase 1C: throws <see cref="NotImplementedException"/> per Roadmap 1C
-    /// anti-drift constraint. Full implementation (Win32 <c>GetLastInputInfo</c>
-    /// PInvoke + idle timer) ships in Phase 2F.
+    /// The monitor polls <c>GetLastInputInfo</c> once per second and requests a
+    /// Windows workstation lock once per idle interval.
     /// </remarks>
     /// <param name="timeout">Inactivity threshold (default 15 minutes per §10.4).</param>
     public void StartIdleMonitor(TimeSpan timeout)
-        => throw new NotImplementedException(
-            "Deferred to Phase 2F per Roadmap 1C Anti-Drift Constraints. " +
-            "IdleMonitor implementation will require Win32 GetLastInputInfo PInvoke (Codex Phase 5E).");
+    {
+        if (timeout <= TimeSpan.Zero) throw new ArgumentOutOfRangeException(nameof(timeout));
+        _idleTimeout = timeout;
+        Interlocked.Exchange(ref _idleTriggered, 0);
+        _idleTimer?.Dispose();
+        _idleTimer = new Timer(CheckIdleState, null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
+    }
 
     /// <inheritdoc />
     public string RedactPhi(string text) => _redactor.Redact(text);
 
-    // The AutoLogoffTriggered event is declared per §4.6 stub. Phase 2F
-    // IdleMonitor will raise it. This private helper exists solely to silence
-    // the C# CS0067 "event never used" warning under TreatWarningsAsErrors —
-    // it is never invoked in Phase 1C.
-    private void RaiseAutoLogoff_NeverCalledInPhase1C()
+    private void CheckIdleState(object? state)
     {
-        AutoLogoffTriggered?.Invoke(this, EventArgs.Empty);
+        var info = new LastInputInfo { Size = (uint)Marshal.SizeOf<LastInputInfo>() };
+        if (!GetLastInputInfo(ref info)) return;
+
+        var idleMilliseconds = unchecked((uint)Environment.TickCount - info.TickCount);
+        var idle = TimeSpan.FromMilliseconds(idleMilliseconds);
+        if (idle < _idleTimeout)
+        {
+            Interlocked.Exchange(ref _idleTriggered, 0);
+            return;
+        }
+        if (Interlocked.Exchange(ref _idleTriggered, 1) != 0) return;
+
+        try
+        {
+            AutoLogoffTriggered?.Invoke(this, EventArgs.Empty);
+            if (!LockWorkStation())
+                _logger.LogWarning("LockWorkStation failed with Win32 error {0}.", Marshal.GetLastWin32Error());
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Idle lock handling failed: {0}: {1}", ex.GetType().Name, ex.Message);
+        }
+    }
+
+    /// <summary>Stops the idle monitor and releases its timer.</summary>
+    public void Dispose()
+    {
+        _idleTimer?.Dispose();
+        _idleTimer = null;
     }
 }

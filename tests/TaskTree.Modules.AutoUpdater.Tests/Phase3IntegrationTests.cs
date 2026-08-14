@@ -108,10 +108,10 @@ namespace TaskTree.Modules.AutoUpdater.Tests
         }
 
         [TestMethod]
-        public async Task ApplyAsync_RemainsPhase5EStub()
+        public async Task ApplyAsync_MissingStagedPackage_FailsClosed()
         {
-            var ex = await Assert.ThrowsExceptionAsync<NotImplementedException>(() => new AutoUpdater().ApplyAsync(Manifest(Array.Empty<byte>())));
-            StringAssert.Contains(ex.Message, "Phase 5E");
+            var ex = await Assert.ThrowsExceptionAsync<FileNotFoundException>(() => new AutoUpdater().ApplyAsync(Manifest(Array.Empty<byte>())));
+            StringAssert.Contains(ex.Message, "MSIX package");
         }
 
         private sealed class TestLogger : TaskTree.Core.Abstractions.IAppLogger

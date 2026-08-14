@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using TaskTree.Core.Enums;
+using TaskStatus = TaskTree.Core.Enums.TaskStatus;
 
 namespace TaskTree.Core.Models
 {

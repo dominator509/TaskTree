@@ -17,6 +17,7 @@ using TaskTree.Core.Enums;
 using TaskTree.Core.Models;
 using TaskTree.Modules.TaskEngine;
 using TaskTree.TestSupport;
+using TaskStatus = TaskTree.Core.Enums.TaskStatus;
 
 namespace TaskTree.Modules.TaskEngine.Tests;
 

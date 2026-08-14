@@ -105,7 +105,7 @@ public sealed class SecureStoreTests
         Assert.AreEqual(42, loaded.Count);
     }
 
-    /// <summary>P1B-AC3: Tampered ciphertext → LoadAsync throws CryptographicException per §10.7.</summary>
+    /// <summary>P1B-AC3: Tampered ciphertext → LoadAsync throws the .NET 8 GCM authentication exception per §10.7.</summary>
     [TestMethod]
     public async Task LoadAsync_TamperedCiphertext_ThrowsCryptographicException()
     {
@@ -119,7 +119,7 @@ public sealed class SecureStoreTests
         blob[AesGcmCryptoProvider.NonceSize + 1] ^= 0x01;
         File.WriteAllBytes(filePath, blob);
 
-        await Assert.ThrowsExceptionAsync<CryptographicException>(
+        await Assert.ThrowsExceptionAsync<AuthenticationTagMismatchException>(
             async () => await h.Store.LoadAsync<SamplePayload>("synthetic-tamper-key"));
     }
 

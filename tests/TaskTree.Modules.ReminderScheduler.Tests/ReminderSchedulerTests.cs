@@ -17,6 +17,7 @@ using TaskTree.Core.Abstractions;
 using TaskTree.Core.Enums;
 using TaskTree.Core.Models;
 using TaskTree.TestSupport;
+using TaskStatus = TaskTree.Core.Enums.TaskStatus;
 
 namespace TaskTree.Modules.ReminderScheduler.Tests
 {
@@ -99,7 +100,6 @@ namespace TaskTree.Modules.ReminderScheduler.Tests
         public async Task StartAsync_CalledTwice_ThrowsInvalidOperationException()
         {
             var (s, _, _, _, _) = Build();
-            s.Cadence = TimeSpan.FromMilliseconds(500);
             await s.StartAsync(CancellationToken.None);
             try
             {
@@ -168,11 +168,11 @@ namespace TaskTree.Modules.ReminderScheduler.Tests
             var (s, _, _, _, _) = Build(tree);
             try
             {
-                s.Cadence = TimeSpan.FromMilliseconds(100);
+                s.Cadence = TimeSpan.FromSeconds(1);
                 int callCount = 0;
                 s.ReminderDue += (_, _) => Interlocked.Increment(ref callCount);
                 await s.StartAsync(CancellationToken.None);
-                await Task.Delay(350);
+                await Task.Delay(1250);
                 await s.StopAsync();
                 Assert.IsTrue(callCount >= 1, $"Expected >= 1 tick; got {callCount}");
             }
@@ -201,9 +201,9 @@ namespace TaskTree.Modules.ReminderScheduler.Tests
             ReminderScheduler.StopWaitTimeout = TimeSpan.FromMilliseconds(200);
             try
             {
-                s.Cadence = TimeSpan.FromMilliseconds(50);
+                s.Cadence = TimeSpan.FromSeconds(1);
                 await s.StartAsync(CancellationToken.None);
-                await Task.Delay(150);
+                await Task.Delay(1100);
                 var sw = Stopwatch.StartNew();
                 await s.StopAsync();
                 sw.Stop();
@@ -230,7 +230,7 @@ namespace TaskTree.Modules.ReminderScheduler.Tests
         public async Task Dispose_WhileRunning_StopsLoopAndPreventsRestart()
         {
             var (s, _, _, _, _) = Build();
-            s.Cadence = TimeSpan.FromMilliseconds(100);
+            s.Cadence = TimeSpan.FromSeconds(1);
             await s.StartAsync(CancellationToken.None);
             s.Dispose();
             await Assert.ThrowsExceptionAsync<ObjectDisposedException>(

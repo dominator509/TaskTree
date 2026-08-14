@@ -3,6 +3,7 @@
 // Gap #171/#172: Compliance policy must document SessionLock audit vocabulary.
 
 using System;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using TaskTree.Core.Abstractions;
@@ -17,6 +18,18 @@ namespace TaskTree.Modules.SessionLock
         private readonly IAppLogger _logger;
         private bool _running;
         private bool _disposed;
+        private Timer? _sessionMonitorTimer;
+        private bool? _lastObservedLockState;
+
+        private const uint DesktopSwitchDesktop = 0x0100;
+        private const int ErrorAccessDenied = 5;
+
+        [DllImport("user32.dll", SetLastError = true)]
+        private static extern IntPtr OpenInputDesktop(uint flags, [MarshalAs(UnmanagedType.Bool)] bool inherit, uint desiredAccess);
+
+        [DllImport("user32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool CloseDesktop(IntPtr desktop);
 
         public event EventHandler<SessionLockChangedEventArgs>? SessionLockChanged;
         public bool IsLocked { get; private set; }
@@ -26,14 +39,16 @@ namespace TaskTree.Modules.SessionLock
             _clock = clock ?? throw new ArgumentNullException(nameof(clock));
             _compliance = compliance ?? throw new ArgumentNullException(nameof(compliance));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _compliance.AutoLogoffTriggered += OnAutoLogoffTriggered;
         }
 
         public async Task StartAsync(CancellationToken ct)
         {
             ThrowIfDisposed();
             if (_running) throw new InvalidOperationException("SessionLockService already running.");
-            _logger.LogWarning("HIGH: Windows session lock hook deferred - Codex Phase 5E");
             _running = true;
+            _lastObservedLockState = null;
+            _sessionMonitorTimer = new Timer(CheckSessionState, null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
             await AuditAsync("SessionLockStarted").ConfigureAwait(false);
         }
 
@@ -41,6 +56,8 @@ namespace TaskTree.Modules.SessionLock
         {
             ThrowIfDisposed();
             if (!_running) return;
+            _sessionMonitorTimer?.Dispose();
+            _sessionMonitorTimer = null;
             _running = false;
             await AuditAsync("SessionLockStopped").ConfigureAwait(false);
         }
@@ -56,6 +73,40 @@ namespace TaskTree.Modules.SessionLock
             var action = locked ? "SessionLocked" : "SessionUnlocked";
             await AuditAsync(action).ConfigureAwait(false);
             SessionLockChanged?.Invoke(this, new SessionLockChangedEventArgs(locked, _clock.UtcNow));
+        }
+
+        private void CheckSessionState(object? state)
+        {
+            if (!_running) return;
+            var desktop = OpenInputDesktop(0, false, DesktopSwitchDesktop);
+            if (desktop != IntPtr.Zero)
+            {
+                CloseDesktop(desktop);
+                _ = ApplyObservedLockStateAsync(false);
+                return;
+            }
+
+            if (Marshal.GetLastWin32Error() == ErrorAccessDenied)
+                _ = ApplyObservedLockStateAsync(true);
+        }
+
+        private async Task ApplyObservedLockStateAsync(bool locked)
+        {
+            try
+            {
+                if (_lastObservedLockState == locked) return;
+                _lastObservedLockState = locked;
+                await SetLockedAsync(locked).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Session switch handling failed: {0}: {1}", ex.GetType().Name, ex.Message);
+            }
+        }
+
+        private void OnAutoLogoffTriggered(object? sender, EventArgs e)
+        {
+            _ = ApplyObservedLockStateAsync(locked: true);
         }
 
         private Task AuditAsync(string action) => _compliance.AuditAsync(new AuditEntry
@@ -74,6 +125,9 @@ namespace TaskTree.Modules.SessionLock
         public void Dispose()
         {
             if (_disposed) return;
+            _sessionMonitorTimer?.Dispose();
+            _sessionMonitorTimer = null;
+            _compliance.AutoLogoffTriggered -= OnAutoLogoffTriggered;
             _disposed = true;
         }
     }

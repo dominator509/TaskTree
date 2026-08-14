@@ -22,8 +22,8 @@
 | Packaging project path | Reconciled statically | `packaging/TaskTree.Installer.wapproj`, `Package.appxmanifest`, and `build-msix.ps1` exist. WAP now explicitly references generated Settings, SessionLock, and Snooze modules; packaging build remains Phase 5E-scoped. |
 | Phase 2 generated module references from app | Verified statically | `TaskTree.App.csproj` references Settings, SessionLock, and Snooze after Phase 5B reconciliation. |
 | WPF project properties | Verified statically | App, UI, and Orchestrator projects use `net8.0-windows`/`UseWPF`. |
-| XAML/code-behind class names | Verified statically | `x:Class` and partial classes were checked for App, MainWindow, ReminderToast, and ToastTier2Window. |
-| Restore/build proof | Deferred | `rtk dotnet restore TaskTree.sln` cannot run because `dotnet` is unavailable on PATH (`P5B-E002`). |
+| XAML/code-behind class names | Verified | `x:Class` and partial classes were checked for App, MainWindow, and ReminderToast; obsolete ToastTier2Window files were deleted after Release build passed. |
+| Restore/build proof | Verified | SDK-backed restore, Debug build, and Release build passed with `C:\Users\domin\.dotnet\dotnet.exe`. |
 
 No standalone `ReminderDelivery` project exists in this checkout; reminder delivery types live in `src/TaskTree.Orchestrator/` and are included through `TaskTree.Orchestrator.csproj`.
 
@@ -77,10 +77,10 @@ Any new package must be recorded for owner review if not already source-approved
 
 | Gap | Description | Target |
 |---|---|---|
-| #361 | Verify `TaskTree.sln` contains every expected project after stitching | Verified statically; build proof deferred |
-| #362 | Reconcile project references and namespace churn from generated modules/tests | Reconciled statically; build proof deferred |
+| #361 | Verify `TaskTree.sln` contains every expected project after stitching | Verified by restore, Debug build, and Release build |
+| #362 | Reconcile project references and namespace churn from generated modules/tests | Reconciled; Debug/Release build proof passed |
 | #374 | Any new package reference must be source-approved or documented for owner review | No new unapproved package added during current Codex pass |
 | #377 | Namespace mismatches must be reconciled and logged if file moves are required | TestSupport namespace migration applied/logged |
 | #380 | WPF/Windows-specific projects must use compatible target frameworks and properties | Verified statically |
-| #381 | XAML/code-behind mismatches must be corrected or documented for UI validation | Verified statically; runtime UI validation deferred |
-| #383 | Generated test files must be included in test projects and compile before Phase 5C execution | Included statically; compile proof deferred |
+| #381 | XAML/code-behind mismatches must be corrected or documented for UI validation | Verified by build; runtime UI validation deferred |
+| #383 | Generated test files must be included in test projects and compile before Phase 5C execution | Included and compiled in Debug/Release; non-live Release tests pass |

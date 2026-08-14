@@ -5,20 +5,25 @@
 using System;
 using System.Threading;
 using System.Windows;
+using Microsoft.Extensions.DependencyInjection;
 using TaskTree.App.Bootstrap;
+using TaskTree.Core.Abstractions;
 
 namespace TaskTree.App;
 
 public partial class App : Application
 {
-    private readonly CompositionRoot _root = new();
+    private IServiceProvider? _services;
+    private IOrchestrator? _orchestrator;
 
     protected override async void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
         try
         {
-            await _root.StartAsync(CancellationToken.None).ConfigureAwait(true);
+            _services = CompositionRoot.BuildServiceProvider();
+            _orchestrator = _services.GetRequiredService<IOrchestrator>();
+            await _orchestrator.StartAsync(CancellationToken.None).ConfigureAwait(true);
         }
         catch (Exception ex)
         {
@@ -33,8 +38,17 @@ public partial class App : Application
 
     protected override async void OnExit(ExitEventArgs e)
     {
-        try { await _root.DisposeAsync().ConfigureAwait(true); }
+        try
+        {
+            if (_orchestrator is not null)
+                await _orchestrator.StopAsync().ConfigureAwait(true);
+        }
         catch { }
+        finally
+        {
+            if (_services is IDisposable disposable)
+                disposable.Dispose();
+        }
         base.OnExit(e);
     }
 }

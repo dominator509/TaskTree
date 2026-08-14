@@ -34,12 +34,12 @@ Bundle file: N/A - stitched repo continuation
 Phase: Phase 5B
 Applied at: 2026-07-04T21:22:10-07:00
 Applied by: Codex
-Result: Applied with build gate deferred
+Result: Applied
 Files added: None
 Files overwritten: None
-Files skipped: `src/TaskTree.Orchestrator/Views/ToastTier2Window.xaml`, `src/TaskTree.Orchestrator/Views/ToastTier2Window.xaml.cs` remain until Release build precondition passes.
+Files skipped: None; obsolete Tier 2 window files were deleted after Release build precondition passed.
 Collision register entries: TestSupport duplicate old-location files; Tier 2 obsolete window pair.
-Notes: Reconciled `TaskTree.sln`, app module references, logger contract drift, DI `TaskTreePaths`, TestSupport migration, and compile register/log entries. Marker verification and `git diff --check` pass. Restore/build/test remain blocked locally because `dotnet` is unavailable on PATH.
+Notes: Reconciled `TaskTree.sln`, app module references, logger contract drift, DI `TaskTreePaths`, TestSupport migration, and compile register/log entries. SDK-backed restore, Debug build, Release build, and non-live Release tests now pass.
 
 ### Sequence C-002 - Phase 5A Manifest State Reconciliation
 
@@ -60,12 +60,25 @@ Bundle file: N/A - stitched repo continuation
 Phase: Phase 5B
 Applied at: 2026-07-04T22:17:31-07:00
 Applied by: Codex
-Result: Applied with build/test gate deferred
+Result: Applied
 Files added: None
 Files overwritten: None
-Files skipped: Restore/build/test execution remains unavailable until a .NET SDK is on PATH.
+Files skipped: None.
 Collision register entries: None.
-Notes: Backfilled offline tests for Orchestrator lifecycle, end-to-end offline provider graph, snoozed reminder delivery skip behavior, safe Ed25519 offline-import verification, TestSupport FakeClock canonicalization, expected solution inventory reconciliation, compile-register category taxonomy reconciliation, MSTest package-version alignment, direct Core test-project reference reconciliation, DI category taxonomy reconciliation, AutoUpdater `ImportLocalAsync` test reconciliation, and Phase 5B static gap-status reconciliation. Compile register/log now run through `P5B-E028` / `P5B-R026`. Marker verification and `git diff --check` pass; `dotnet restore TaskTree.sln` remains blocked by missing `dotnet`.
+Notes: Backfilled offline tests for Orchestrator lifecycle, end-to-end offline provider graph, snoozed reminder delivery skip behavior, safe Ed25519 offline-import verification, TestSupport FakeClock canonicalization, expected solution inventory reconciliation, compile-register category taxonomy reconciliation, MSTest package-version alignment, direct Core test-project reference reconciliation, DI category taxonomy reconciliation, AutoUpdater `ImportLocalAsync` test reconciliation, and Phase 5B static gap-status reconciliation. Compile register/log now run through `P5B-E030` / `P5B-R028`; SDK-backed restore/build/test gates pass.
+
+### Sequence C-004 - Phase 5B SDK-Backed Compile and Test Closure
+
+Bundle file: N/A - stitched repo continuation
+Phase: Phase 5B
+Applied at: 2026-07-05T00:00:00-07:00
+Applied by: Codex
+Result: Applied
+Files added: `src/TaskTree.Core/Clock.cs`, `src/TaskTree.Modules.BugReporter/Properties/AssemblyInfo.cs`
+Files overwritten: Multiple compile/test source files; see `docs/compile/compile-resolution-log.md` entries `P5B-R027` and `P5B-R028`.
+Files skipped: None.
+Collision register entries: Tier 2 obsolete window pair deleted after Release build precondition.
+Notes: Installed .NET SDK 8.0.422 user-local, ran restore, Debug build, Release build, deleted obsolete `ToastTier2Window` files, re-ran Release build, and passed `dotnet test TaskTree.sln -c Release --filter TestCategory!=Live`.
 
 ## Claude/Codex Gap
 

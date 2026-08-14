@@ -115,6 +115,8 @@ namespace TaskTree.Orchestrator.Tests
                 TrayHost.Setup(x => x.Initialize());
                 TrayHost.Setup(x => x.Dispose());
 
+                Compliance.Setup(x => x.StartIdleMonitor(It.IsAny<TimeSpan>()));
+
                 Compliance.Setup(x => x.AuditAsync(It.IsAny<AuditEntry>()))
                     .Callback<AuditEntry>(AuditEntries.Add)
                     .Returns(Task.CompletedTask);

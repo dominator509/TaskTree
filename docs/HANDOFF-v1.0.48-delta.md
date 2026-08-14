@@ -8,12 +8,12 @@
 | Field | Old | New |
 |---|---|---|
 | Document Version | 1.0.47 | 1.0.48 |
-| State | Phase 5B planning emitted; actual compile execution pending Claude/Codex on stitched repo | Phase 5B static compile-closure work partially applied; restore/build/test proof blocked locally by missing .NET SDK |
+| State | Phase 5B planning emitted; actual compile execution pending Claude/Codex on stitched repo | Phase 5B SDK-backed compile closure complete locally; restore, Debug build, Release build, and non-live Release tests pass |
 | Marker grand total | 177 | 179 |
 
 ## Summary
 
-Codex continued Phase 5B within the stitched checkout. Static project/reference reconciliation and offline test backfills are recorded in `docs/compile/*.md`; the compile-error register now runs through `P5B-E028`, and the compile-resolution log now runs through `P5B-R026`.
+Codex continued Phase 5B within the stitched checkout. Static project/reference reconciliation, SDK-backed compile fixes, Tier 2 obsolete file deletion, and offline test alignment are recorded in `docs/compile/*.md`; the compile-error register now runs through `P5B-E030`, and the compile-resolution log now runs through `P5B-R028`.
 
 ## Applied Static Backfills
 
@@ -23,18 +23,20 @@ Codex continued Phase 5B within the stitched checkout. Static project/reference 
 - Offline update import now has a safe Ed25519 test-key seam and positive signed-bundle test without adding a production key.
 - TestSupport `FakeClock` now preserves the root namespace compatibility surface while forwarding to the promoted `TaskTree.TestSupport.Clocks.FakeClock` implementation.
 - `docs/stitching/expected-solution-projects.md` now matches the current stitched source/test project inventory and records ReminderDelivery as Orchestrator-owned.
-- Compile-register root-cause categories now include the current Phase 5B category set used by entries through `P5B-E028`.
+- Compile-register root-cause categories now include the current Phase 5B category set used by entries through `P5B-E030`.
 - MSTest package versions are aligned to the repo's current `3.6.1` baseline across the stitched test graph.
 - BugReporter and SecureStore tests now explicitly reference `TaskTree.Core` where their sources import Core namespaces directly.
 - AutoUpdater `ImportLocalAsync` tests now match the implemented offline-import path instead of the older Phase 3C deferred stub expectation.
 - Static status rows for project-reference/namespace, DI, and duplicate-type reconciliation now reflect current static audit evidence while keeping restore/build proof deferred.
 
-## Remaining Phase 5B Gates
+## Phase 5B Gate Results
 
-- `rtk dotnet restore TaskTree.sln` cannot run because `dotnet` is unavailable on PATH; `where dotnet` and standard Program Files probes also found no local `dotnet.exe`.
-- Debug and Release builds remain unproven until restore succeeds.
-- Tier 2 obsolete window deletion remains gated on a successful Release build.
-- Phase 5C must not start until restore, Debug build, and Release build pass.
+- .NET SDK 8.0.422 was installed user-local at `C:\Users\domin\.dotnet\dotnet.exe`.
+- `rtk C:\Users\domin\.dotnet\dotnet.exe restore TaskTree.sln` passed.
+- `rtk C:\Users\domin\.dotnet\dotnet.exe build TaskTree.sln -c Debug` passed.
+- `rtk C:\Users\domin\.dotnet\dotnet.exe build TaskTree.sln -c Release` passed after obsolete Tier 2 window deletion.
+- `rtk C:\Users\domin\.dotnet\dotnet.exe test TaskTree.sln -c Release --filter TestCategory!=Live` passed.
+- Live Windows/MSIX/provider validation remains Phase 5E/5F-owned.
 
 ## Current Required Commands
 

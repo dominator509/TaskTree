@@ -2,53 +2,53 @@
 // File: src/TaskTree.Modules.TrayHost/TrayHost.cs
 // Module: TaskTree.Modules.TrayHost
 // Implements: TaskTree.Core.Abstractions.ITrayHost (Architecture §4.1)
-// Default hotkey: Architecture §13 Ctrl+Alt+T (deferred to Phase 2A HotkeyConfig)
-// Audit schema: Architecture §10.5 (live wiring deferred to Codex Phase 5E)
-// Gap classification: Architecture §21 Environment Gap (HIGH complexity)
-// Roadmap: Sub-Phase 1E (P1E-AC1 compiles; P1E-AC2 events raise; P1E-AC3 stubbed)
+// Default hotkey: Architecture §13 Ctrl+Alt+T
+// Audit schema: Architecture §10.5
+// Roadmap: Sub-Phase 1E and Phase 5E live wiring
 // ----------------------------------------------------------------------------
 // SPEC-DERIVED-PHASE1E
 //   HALT #2  ctor (IAppLogger, IComplianceCore) — 3rd LOAD-BEARING audit injection (Gap #56)
-//   HALT #3  _compliance stored for Phase 5E live wiring; no AuditAsync in stub (Gap #57)
-//   HALT #4  Canonical HIGH-stub text format for Phase 5E grep-based gap closure
+//   HALT #3  _compliance is used for user-intent audit events
 //   HALT #5  Internal Raise*() methods for P1E-AC2 satisfaction (InternalsVisibleTo) — Gap #58
 //   HALT #7  public sealed class TrayHost : ITrayHost, IDisposable
 //   HALT #8  Real idempotent Dispose (no Win32 resources owned in stub state)
-//   HALT #9  ShowBalloon validates params first, then throws NotImplementedException
-//   HALT #10 No Initialize idempotency check in stub — Codex Phase 5E adds it (Gap #59)
-//   HALT #12 _initialized field declared; Codex Phase 5E sets to true on success
-// Public API surface UNCHANGED when Codex implements live functionality.
+//   HALT #9  ShowBalloon validates params before calling the native adapter
+//   HALT #10 Initialize is idempotent
+// Public API surface remains unchanged.
 // See: docs/spec-derivations/PHASE1E-DERIVATIONS.md
 // ============================================================================
 
 using System;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Interop;
+using System.Windows.Media;
+using H.NotifyIcon;
 using TaskTree.Core.Abstractions;
 
 namespace TaskTree.Modules.TrayHost
 {
     /// <summary>
-    /// Tray icon + global hotkey host. Phase 1E HIGH-stub —
-    /// <see cref="Initialize"/> and <see cref="ShowBalloon"/> throw
-    /// <see cref="NotImplementedException"/> per D5; events are declared
-    /// and raisable via internal <c>Raise*()</c> methods for test
-    /// verification (P1E-AC2). Real NotifyIcon + RegisterHotKey wiring
-    /// deferred to Codex Phase 5E.
+    /// Tray icon, context menu, and global hotkey host.
     /// </summary>
     /// <remarks>
-    /// Phase 1E scope per Roadmap Sub-Phase 1E. Public API surface unchanged
-    /// when Codex implements live functionality at Phase 5E.
+    /// The native resources are created on the WPF dispatcher that owns the
+    /// application and are released by <see cref="Dispose"/>.
     /// </remarks>
     public sealed class TrayHost : ITrayHost, IDisposable
     {
         private readonly IAppLogger _logger;
 
-        // HALT #3 — stored for Phase 5E live wiring; not invoked in stub (Gap #57).
         private readonly IComplianceCore _compliance;
-
-        // HALT #12 — declared; Codex Phase 5E sets to true at end of Initialize().
+        private TaskbarIcon? _taskbarIcon;
+        private HwndSource? _hotkeyWindow;
+        private bool _hotkeyRegistered;
         private bool _initialized;
-
         private bool _disposed;
+
+        private const int HotkeyId = 0x5454;
+        private const int WmHotkey = 0x0312;
+        private static readonly IntPtr HwndMessage = new(-3);
 
         /// <summary>
         /// Creates a new TrayHost. All dependencies required; nulls throw
@@ -76,26 +76,55 @@ namespace TaskTree.Modules.TrayHost
         public event EventHandler? ExitRequested;
 
         /// <inheritdoc />
-        /// <remarks>
-        /// HIGH-stub per Roadmap §1E. Codex Phase 5E implements NotifyIcon
-        /// creation + global hotkey registration via
-        /// <see cref="HotkeyInterop.Register"/>; on success sets
-        /// <c>_initialized = true</c>. Codex must also add idempotency guard
-        /// (Gap #59) and AuditAsync calls (Gap #57).
-        /// </remarks>
         public void Initialize()
         {
             ThrowIfDisposed();
-            throw new NotImplementedException(
-                "HIGH: NotifyIcon + RegisterHotKey require live env — Codex Phase 5E");
+            if (_initialized) return;
+            if (Application.Current is null)
+                throw new InvalidOperationException("TrayHost requires a WPF Application context.");
+
+            try
+            {
+                _taskbarIcon = new TaskbarIcon
+                {
+                    ToolTipText = "TaskTree",
+                    IconSource = new GeneratedIconSource
+                    {
+                        Text = "T",
+                        Foreground = Brushes.White,
+                        Background = Brushes.DarkSlateGray,
+                        FontWeight = FontWeights.Bold,
+                    },
+                };
+                _taskbarIcon.ContextMenu = CreateContextMenu();
+                _taskbarIcon.TrayLeftMouseDoubleClick += OnTrayShowTree;
+                _taskbarIcon.TrayBalloonTipClicked += OnTrayBalloonClicked;
+                _taskbarIcon.ForceCreate();
+
+                var sourceParameters = new HwndSourceParameters("TaskTree.Hotkey")
+                {
+                    ParentWindow = HwndMessage,
+                    WindowStyle = 0,
+                };
+                _hotkeyWindow = new HwndSource(sourceParameters);
+                _hotkeyWindow.AddHook(WindowMessageFilter);
+                HotkeyInterop.Register(
+                    _hotkeyWindow.Handle,
+                    HotkeyId,
+                    HotkeyInterop.BuildModifierFlags(ctrl: true, alt: true, shift: false, win: false),
+                    0x54);
+                _hotkeyRegistered = true;
+                _initialized = true;
+                RecordAudit("TrayInitialized");
+            }
+            catch
+            {
+                DisposeNativeResources();
+                throw;
+            }
         }
 
         /// <inheritdoc />
-        /// <remarks>
-        /// HIGH-stub per Roadmap §1E. Param validation runs now (HALT #9) —
-        /// null/empty/whitespace throws <see cref="ArgumentException"/>; the
-        /// live balloon call is deferred to Codex Phase 5E.
-        /// </remarks>
         public void ShowBalloon(string title, string message)
         {
             ThrowIfDisposed();
@@ -105,8 +134,93 @@ namespace TaskTree.Modules.TrayHost
                 throw new ArgumentException("Title cannot be empty or whitespace.", nameof(title));
             if (string.IsNullOrWhiteSpace(message))
                 throw new ArgumentException("Message cannot be empty or whitespace.", nameof(message));
-            throw new NotImplementedException(
-                "HIGH: NotifyIcon balloon requires live env — Codex Phase 5E");
+            if (!_initialized || _taskbarIcon is null)
+                throw new InvalidOperationException("TrayHost must be initialized before showing a balloon.");
+
+            _taskbarIcon.ShowNotification(
+                title,
+                message,
+                H.NotifyIcon.Core.NotificationIcon.Info,
+                largeIcon: true,
+                sound: false,
+                respectQuietTime: true,
+                realtime: true,
+                timeout: TimeSpan.FromSeconds(8));
+            RecordAudit("TrayBalloonShown");
+        }
+
+        private ContextMenu CreateContextMenu()
+        {
+            var menu = new ContextMenu();
+            var showTree = new MenuItem { Header = "Open Task Tree" };
+            showTree.Click += OnTrayShowTree;
+            var addTask = new MenuItem { Header = "Add Task" };
+            addTask.Click += OnTrayAddTask;
+            var exit = new MenuItem { Header = "Exit" };
+            exit.Click += OnTrayExit;
+            menu.Items.Add(showTree);
+            menu.Items.Add(addTask);
+            menu.Items.Add(new Separator());
+            menu.Items.Add(exit);
+            return menu;
+        }
+
+        private void OnTrayShowTree(object? sender, EventArgs e)
+        {
+            RaiseShowTreeRequested();
+            RecordAudit("ShowTreeRequested");
+        }
+
+        private void OnTrayAddTask(object? sender, RoutedEventArgs e)
+        {
+            RaiseAddTaskRequested();
+            RecordAudit("AddTaskRequested");
+        }
+
+        private void OnTrayExit(object? sender, RoutedEventArgs e)
+        {
+            RaiseExitRequested();
+            RecordAudit("ExitRequested");
+        }
+
+        private void OnTrayBalloonClicked(object? sender, RoutedEventArgs e)
+        {
+            RaiseShowTreeRequested();
+            RecordAudit("TrayBalloonClicked");
+        }
+
+        private IntPtr WindowMessageFilter(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
+        {
+            if (msg == WmHotkey && wParam.ToInt32() == HotkeyId)
+            {
+                RaiseShowTreeRequested();
+                RecordAudit("GlobalHotkeyPressed");
+                handled = true;
+            }
+            return IntPtr.Zero;
+        }
+
+        private void RecordAudit(string action)
+        {
+            _ = RecordAuditAsync(action);
+        }
+
+        private async System.Threading.Tasks.Task RecordAuditAsync(string action)
+        {
+            try
+            {
+                await _compliance.AuditAsync(new TaskTree.Core.Models.AuditEntry
+                {
+                    Module = "TrayHost",
+                    Action = action,
+                    Result = "success",
+                    Timestamp = DateTimeOffset.UtcNow,
+                }).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "TrayHost audit failed: {0}", ex.Message);
+            }
         }
 
         // --------------------------------------------------------------------
@@ -134,17 +248,39 @@ namespace TaskTree.Modules.TrayHost
         }
 
         /// <summary>
-        /// Idempotent disposal. In Phase 1E stub state, no Win32 resources are
-        /// owned (NotifyIcon not created until <see cref="Initialize"/>, which
-        /// throws). Codex Phase 5E will extend to dispose NotifyIcon and call
-        /// <see cref="HotkeyInterop.Unregister"/>.
+        /// Idempotent disposal of the tray icon, message-only window, and hotkey.
         /// </summary>
         public void Dispose()
         {
             if (_disposed) return;
+            DisposeNativeResources();
             try { _logger.LogInformation("TrayHost disposed."); }
-            catch { /* swallow logger failure during disposal */ }
+            catch { }
             _disposed = true;
+        }
+
+        private void DisposeNativeResources()
+        {
+            if (_hotkeyRegistered && _hotkeyWindow is not null)
+            {
+                try { HotkeyInterop.Unregister(_hotkeyWindow.Handle, HotkeyId); }
+                catch (Exception ex) { _logger.LogWarning("Hotkey unregister failed: {0}", ex.Message); }
+            }
+            _hotkeyRegistered = false;
+            if (_hotkeyWindow is not null)
+            {
+                _hotkeyWindow.RemoveHook(WindowMessageFilter);
+                _hotkeyWindow.Dispose();
+                _hotkeyWindow = null;
+            }
+            if (_taskbarIcon is not null)
+            {
+                _taskbarIcon.TrayLeftMouseDoubleClick -= OnTrayShowTree;
+                _taskbarIcon.TrayBalloonTipClicked -= OnTrayBalloonClicked;
+                _taskbarIcon.Dispose();
+                _taskbarIcon = null;
+            }
+            _initialized = false;
         }
     }
 }

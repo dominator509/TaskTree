@@ -37,12 +37,12 @@ dotnet build TaskTree.sln -c Release
 |---|---|---|
 | Confirm stitched repo is authoritative | Applied | `docs/stitching/*.md` now records current repo evidence and source-of-truth boundaries. |
 | Marker verification | Passing | `rtk powershell -NoProfile -ExecutionPolicy Bypass -File tools/find-spec-derivations.ps1 -Root .` reports `Grand total: 179 expected 179`. |
-| Restore | Deferred | `rtk dotnet restore TaskTree.sln` fails locally because `dotnet` is unavailable on PATH; `where dotnet` and standard Program Files probes also find no local install (`P5B-E002`). |
-| Debug build | Blocked by restore/toolchain | Requires .NET SDK. |
-| Release build | Blocked by restore/toolchain | Requires .NET SDK; also gates Tier 2 obsolete window deletion. |
-| Compile-error register | Populated/current | Entries `P5B-E001` through `P5B-E028`; `P5B-E002` and `P5B-E011` remain deferred. |
-| Compile-resolution log | Populated/current | Resolutions through `P5B-R026`; all applied static fixes are logged. |
-| Phase 5C handoff | Not ready | Phase 5C requires successful restore, Debug build, and Release build first. |
+| Restore | Passing | `rtk C:\Users\domin\.dotnet\dotnet.exe restore TaskTree.sln` succeeded after installing .NET SDK 8.0.422. |
+| Debug build | Passing | `rtk C:\Users\domin\.dotnet\dotnet.exe build TaskTree.sln -c Debug` succeeded after compile-only fixes. |
+| Release build | Passing | `rtk C:\Users\domin\.dotnet\dotnet.exe build TaskTree.sln -c Release` succeeded after the Tier 2 obsolete window deletion. |
+| Compile-error register | Populated/current | Entries `P5B-E001` through `P5B-E030`; all compile-blocking entries are resolved. |
+| Compile-resolution log | Populated/current | Resolutions through `P5B-R028`; all applied SDK-backed fixes are logged. |
+| Phase 5C handoff | Ready after final handoff update | Restore, Debug build, Release build, and non-live Release tests are now green. |
 
 ## Constructor Churn Reconciliation
 
@@ -122,11 +122,11 @@ Phase 5B is complete only when:
 | Gap | Description | Target |
 |---|---|---|
 | #367 | Compile fixes must not redesign features or expand scope beyond buildability | Preserved; static fixes only |
-| #375 | Constructor churn must be reconciled without changing runtime behavior | Further applied via orchestrator and E2E offline test backfills; build proof deferred |
-| #376 | DI registrations must be reconciled and unresolved runtime graph gaps documented | Reconciled statically via `TaskTreePaths`, current service graph tests, and package/reference audits; build proof deferred |
-| #378 | Duplicate/conflicting models/enums must be resolved with selected source and compatibility rationale | Reconciled statically via model/enum audits, TestSupport duplicate deletion, and duplicate full-type scan; build proof deferred |
-| #379 | Interface/implementation drift must be closed systematically and recorded | Further applied via reminder delivery snooze test backfill; build proof deferred |
-| #221 | Positive offline import requires a safe Ed25519 test-key seam without adding a production key | Applied via `ManifestSigner` public-key override and signed-bundle test; build proof deferred |
-| #382 | TestSupport fakes must be reconciled with final interfaces and constructors | Further reconciled via shared TestSupport consumer migration; compile proof deferred |
-| #384 | Actual compile closure requires Claude/Codex on stitched repo with real command outputs | Still open; restore/build blocked by missing .NET SDK |
-| #319 | Final `.wapproj` project references must be reconciled against stitched repo projects | Applied statically; MSIX tooling proof deferred to Phase 5E |
+| #375 | Constructor churn must be reconciled without changing runtime behavior | Reconciled; Debug/Release proof passed |
+| #376 | DI registrations must be reconciled and unresolved runtime graph gaps documented | Reconciled; `TaskTreePaths`, `Clock`, service graph, and App host compile in Debug/Release |
+| #378 | Duplicate/conflicting models/enums must be resolved with selected source and compatibility rationale | Reconciled; enum ambiguity aliases compile in Debug/Release |
+| #379 | Interface/implementation drift must be closed systematically and recorded | Reconciled; non-live Release tests pass |
+| #221 | Positive offline import requires a safe Ed25519 test-key seam without adding a production key | Applied; signed-bundle test passes with test-only Ed25519 vector |
+| #382 | TestSupport fakes must be reconciled with final interfaces and constructors | Reconciled; non-live Release tests pass |
+| #384 | Actual compile closure requires Claude/Codex on stitched repo with real command outputs | Closed for Phase 5B restore, Debug build, Release build, and non-live test gate |
+| #319 | Final `.wapproj` project references must be reconciled against stitched repo projects | Applied statically; MSIX tooling proof remains Phase 5E |

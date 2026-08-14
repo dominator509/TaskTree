@@ -9,6 +9,7 @@ using System;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using TaskTree.Core.Enums;
 using TaskTree.Core.Models;
+using TaskStatus = TaskTree.Core.Enums.TaskStatus;
 
 namespace TaskTree.Modules.ReminderScheduler.Tests
 {

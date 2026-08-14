@@ -35,14 +35,13 @@ namespace TaskTree.Modules.TrayHost.Tests
         }
 
         [TestMethod, TestCategory("Offline")]
-        public void Initialize_ThrowsNotImplementedException_WithCanonicalText()
+        public void Initialize_RequiresWpfApplicationContext()
         {
             var (trayHost, _, _) = Build();
             try
             {
-                var ex = Assert.ThrowsException<NotImplementedException>(() => trayHost.Initialize());
-                StringAssert.Contains(ex.Message, "HIGH:");
-                StringAssert.Contains(ex.Message, "Codex Phase 5E");
+                var ex = Assert.ThrowsException<InvalidOperationException>(() => trayHost.Initialize());
+                StringAssert.Contains(ex.Message, "WPF Application");
             }
             finally { trayHost.Dispose(); }
         }
@@ -74,15 +73,14 @@ namespace TaskTree.Modules.TrayHost.Tests
         }
 
         [TestMethod, TestCategory("Offline")]
-        public void ShowBalloon_ValidInputs_ThrowsNotImplementedException()
+        public void ShowBalloon_BeforeInitialize_ThrowsInvalidOperationException()
         {
             var (trayHost, _, _) = Build();
             try
             {
-                var ex = Assert.ThrowsException<NotImplementedException>(
+                var ex = Assert.ThrowsException<InvalidOperationException>(
                     () => trayHost.ShowBalloon("Valid Title", "Valid Message"));
-                StringAssert.Contains(ex.Message, "HIGH:");
-                StringAssert.Contains(ex.Message, "Codex Phase 5E");
+                StringAssert.Contains(ex.Message, "initialized");
             }
             finally { trayHost.Dispose(); }
         }

@@ -128,12 +128,12 @@ namespace TaskTree.Modules.TrayHost.Tests
         }
 
         [TestMethod, TestCategory("Offline")]
-        public async Task InitializeAsync_HIGHStub_ThrowsNotImplementedException()
+        public async Task InitializeAsync_RequiresWindowHandle()
         {
             var (mgr, _, _, _, _) = Build();
             try
             {
-                await Assert.ThrowsExceptionAsync<NotImplementedException>(
+                await Assert.ThrowsExceptionAsync<ArgumentException>(
                     async () => await mgr.InitializeAsync(IntPtr.Zero));
             }
             finally { mgr.Dispose(); }

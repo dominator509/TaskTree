@@ -16,6 +16,7 @@ using System.Threading.Tasks;
 using TaskTree.Core.Abstractions;
 using TaskTree.Core.Models;
 using TaskTree.Core.Enums;
+using TaskStatus = TaskTree.Core.Enums.TaskStatus;
 
 namespace TaskTree.Modules.TaskEngine;
 

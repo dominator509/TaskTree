@@ -2,27 +2,26 @@
 // File: src/TaskTree.Modules.TrayHost/HotkeyInterop.cs
 // Module: TaskTree.Modules.TrayHost
 // Architecture: §4.1 (RegisterHotKey PInvoke wrapper); §13 default hotkey
-// Roadmap: Sub-Phase 1E (HIGH-stub); future consumer Sub-Phase 2A HotkeyManager
+// Roadmap: Sub-Phase 1E; consumed by the Phase 2A HotkeyManager and TrayHost
 // ----------------------------------------------------------------------------
 // SPEC-DERIVED-PHASE1E
-//   HALT #1  Hybrid A+C — PInvoke sigs present, Register/Unregister stubbed,
-//            BuildModifierFlags implemented (pure logic, no Win32 call)
+//   HALT #1  Hybrid A+C — PInvoke signatures and pure modifier logic are
+//            retained; Register/Unregister now call the declared Win32 API.
 //   HALT #6  public static class — consumable by future Phase 2A HotkeyManager
-// PInvoke declarations compile but only execute on call; safe in chat-only env.
-// Codex Phase 5E replaces Register/Unregister bodies with live PInvoke calls.
+// PInvoke calls are isolated here so callers can keep their platform boundary
+// small and deterministic.
 // ============================================================================
 
 using System;
+using System.ComponentModel;
 using System.Runtime.InteropServices;
 
 namespace TaskTree.Modules.TrayHost
 {
     /// <summary>
     /// Win32 <c>RegisterHotKey</c> / <c>UnregisterHotKey</c> PInvoke wrappers.
-    /// Phase 1E HIGH-stub — PInvoke declarations are present and
-    /// <see cref="BuildModifierFlags"/> is implemented; <see cref="Register"/>
-    /// and <see cref="Unregister"/> throw <see cref="NotImplementedException"/>
-    /// pending Codex Phase 5E live message loop.
+    /// <see cref="BuildModifierFlags"/> is pure and deterministic; the wrapper
+    /// methods validate arguments and surface native registration failures.
     /// </summary>
     public static class HotkeyInterop
     {
@@ -53,26 +52,35 @@ namespace TaskTree.Modules.TrayHost
         [return: MarshalAs(UnmanagedType.Bool)]
         private static extern bool UnregisterHotKey(IntPtr hWnd, int id);
 
-        // ---- Wrappers (HIGH-stubbed per Roadmap) ----------------------------
+        // ---- Win32 wrappers --------------------------------------------------
 
         /// <summary>
-        /// Registers a global hotkey. HIGH-stub — throws until Codex Phase 5E
-        /// provides a live message-only window HWND and replaces this body
-        /// with a real <c>RegisterHotKey</c> PInvoke call.
+        /// Registers a global hotkey against a message-only or top-level window.
         /// </summary>
         public static void Register(IntPtr hWnd, int id, uint modifiers, uint virtualKey)
         {
-            throw new NotImplementedException(
-                "HIGH: RegisterHotKey PInvoke requires live message loop — Codex Phase 5E");
+            if (hWnd == IntPtr.Zero) throw new ArgumentException("A window handle is required.", nameof(hWnd));
+            if (id <= 0) throw new ArgumentOutOfRangeException(nameof(id));
+            if (virtualKey == 0 || virtualKey > ushort.MaxValue)
+                throw new ArgumentOutOfRangeException(nameof(virtualKey));
+            if (!RegisterHotKey(hWnd, id, modifiers, virtualKey))
+                throw new Win32Exception(Marshal.GetLastWin32Error(), "RegisterHotKey failed.");
         }
 
         /// <summary>
-        /// Unregisters a previously registered global hotkey. HIGH-stub.
+        /// Unregisters a previously registered global hotkey.
         /// </summary>
         public static void Unregister(IntPtr hWnd, int id)
         {
-            throw new NotImplementedException(
-                "HIGH: UnregisterHotKey PInvoke requires live message loop — Codex Phase 5E");
+            if (hWnd == IntPtr.Zero) throw new ArgumentException("A window handle is required.", nameof(hWnd));
+            if (id <= 0) throw new ArgumentOutOfRangeException(nameof(id));
+            if (!UnregisterHotKey(hWnd, id))
+            {
+                var error = Marshal.GetLastWin32Error();
+                const int HotKeyNotRegistered = 1409;
+                if (error != HotKeyNotRegistered)
+                    throw new Win32Exception(error, "UnregisterHotKey failed.");
+            }
         }
 
         // ---- Pure-logic helpers (implemented now) ---------------------------

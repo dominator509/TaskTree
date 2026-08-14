@@ -20,7 +20,7 @@ TaskTree is a Windows-only, HIPAA-aware desktop task/reminder app. It lives in t
 - Tests: MSTest, Moq, `Microsoft.NET.Test.Sdk`.
 - Packaging: MSIX/WAP project under `packaging/`.
 - Crypto/storage: `System.Security.Cryptography`, AES-GCM, DPAPI-wrapped local master key, JSON payloads, local `%LOCALAPPDATA%\TaskTree\...` paths.
-- External integrations planned or stubbed by phase: updater manifest/package fetch, Ed25519 verification via NSec.Cryptography, SMTP, GitHub Issues, Windows tray/hotkey/toast/credential APIs.
+- External integrations: HTTPS updater manifest/download, Ed25519 verification via NSec.Cryptography, SMTP, GitHub Issues, Windows tray/hotkey/session APIs, and WPF toast fallback. Runtime credentials/package identity/signing remain environment-owned.
 
 ## Entrypoints
 
@@ -59,6 +59,7 @@ Use documented command paths when validating scripts. Do not install packages du
 - `src/TaskTree.Modules.Settings`, `src/TaskTree.Modules.Snooze`, `src/TaskTree.Modules.SessionLock`: later-phase feature modules present in the current tree.
 - `tests/`: MSTest projects mirroring modules plus perf and UI tests.
 - `docs/`: handoff, architecture, roadmap, derivation, compile/stitching, release, compliance, and user/admin docs.
+- Phase evidence: `docs/test-gap-report.md`, `docs/integration-gap-report.md`, `docs/env-gap-report.md`, `docs/final-validation-report.md`.
 - `.obsidian/`: existing local Obsidian vault settings only; do not copy large repo content into notes.
 
 ## Do-Not-Touch / Risk Areas
@@ -71,7 +72,9 @@ Use documented command paths when validating scripts. Do not install packages du
 
 ## Current Unknowns / TODOs
 
-- Confirm the true current phase status by reconciling current source/tests against the latest handoff chain; the top-level `docs/HANDOFF.md` excerpt is older than some present modules.
+- Phase 5C non-live validation is green; Phase 5D is composition-verified but real interactive E2E remains open; Phase 5E code paths are implemented but provider/package validation remains open. See the linked phase reports.
+- Coverage evidence is still required for the Roadmap 5C 75% threshold.
+- Real WPF/tray E2E, MSIX/WAP build/sign/install, and installed-binary validation require an interactive Windows environment.
 - Q10: owner must provide the real PHI common-name source list before Phase 5F sign-off.
 - Q11: owner must provide or explicitly accept the support-email allowlist default before Phase 5F sign-off.
 - GitHub remote currently exists at `https://github.com/dominator509/TaskTree.git`; `main` has been pushed. Continue to verify current `git status`/remote state before publish or recovery work.

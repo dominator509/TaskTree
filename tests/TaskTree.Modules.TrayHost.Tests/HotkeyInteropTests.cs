@@ -61,23 +61,17 @@ namespace TaskTree.Modules.TrayHost.Tests
         }
 
         [TestMethod, TestCategory("Offline")]
-        public void Register_ThrowsNotImplementedException_WithCanonicalText()
+        public void Register_RequiresWindowHandle()
         {
-            var ex = Assert.ThrowsException<NotImplementedException>(
-                () => HotkeyInterop.Register(IntPtr.Zero, 0, 0u, 0u));
-            StringAssert.Contains(ex.Message, "HIGH:");
-            StringAssert.Contains(ex.Message, "Codex Phase 5E");
-            StringAssert.Contains(ex.Message, "RegisterHotKey");
+            Assert.ThrowsException<ArgumentException>(
+                () => HotkeyInterop.Register(IntPtr.Zero, 1, 0u, 0x54));
         }
 
         [TestMethod, TestCategory("Offline")]
-        public void Unregister_ThrowsNotImplementedException_WithCanonicalText()
+        public void Unregister_RequiresWindowHandle()
         {
-            var ex = Assert.ThrowsException<NotImplementedException>(
-                () => HotkeyInterop.Unregister(IntPtr.Zero, 0));
-            StringAssert.Contains(ex.Message, "HIGH:");
-            StringAssert.Contains(ex.Message, "Codex Phase 5E");
-            StringAssert.Contains(ex.Message, "UnregisterHotKey");
+            Assert.ThrowsException<ArgumentException>(
+                () => HotkeyInterop.Unregister(IntPtr.Zero, 1));
         }
     }
 }

@@ -18,6 +18,7 @@ using System.Threading.Tasks;
 using TaskTree.Core.Abstractions;
 using TaskTree.Core.Enums;
 using TaskTree.Core.Models;
+using TaskStatus = TaskTree.Core.Enums.TaskStatus;
 
 namespace TaskTree.Modules.ReminderScheduler
 {

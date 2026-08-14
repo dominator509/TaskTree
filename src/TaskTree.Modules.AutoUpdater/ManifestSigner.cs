@@ -61,7 +61,7 @@ namespace TaskTree.Modules.AutoUpdater
                 var publicKeyBytes = Convert.FromBase64String(_publicKeyBase64);
                 var signatureBytes = Convert.FromBase64String(manifest.Signature.Value);
                 var algorithm = SignatureAlgorithm.Ed25519;
-                using var publicKey = PublicKey.Import(algorithm, publicKeyBytes, KeyBlobFormat.RawPublicKey);
+                var publicKey = PublicKey.Import(algorithm, publicKeyBytes, KeyBlobFormat.RawPublicKey);
                 return algorithm.Verify(publicKey, BuildCanonicalSigningPayload(manifest), signatureBytes);
             }
             catch

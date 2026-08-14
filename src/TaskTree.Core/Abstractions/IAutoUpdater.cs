@@ -34,7 +34,7 @@ public interface IAutoUpdater
     /// <returns><c>true</c> if both signature and hash check out; otherwise <c>false</c>.</returns>
     Task<bool> VerifyAsync(UpdateManifest manifest, byte[] payload);
 
-    /// <summary>Applies a staged update (live MSIX install is finalized in Codex Phase 5E).</summary>
+    /// <summary>Applies a staged update through the Windows MSIX installer.</summary>
     /// <param name="manifest">The manifest associated with the staged package.</param>
     Task ApplyAsync(UpdateManifest manifest);
 

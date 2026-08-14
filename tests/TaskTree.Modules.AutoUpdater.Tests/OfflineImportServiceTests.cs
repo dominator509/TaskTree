@@ -19,8 +19,8 @@ namespace TaskTree.Modules.AutoUpdater.Tests
     [TestClass]
     public class OfflineImportServiceTests
     {
-        private const string TestPublicKeyBase64 = "O5l5hFZw3wLSEvGNAjzO+XzfbB4wLnD/27VRZyaCXvI=";
-        private const string TestSignatureBase64 = "VFzvsSd+zCJ1pnre04re0I1oRg+6Zjbe1SndxfFLcV0aZ6BJW9ke1tzPjZImrVm4jgMyrKxhIeHIoYl5yQaLCA==";
+        private const string TestPublicKeyBase64 = "SmLibYaFoZZTvKbfgIRDpvjWztHTSfLXldqSLQGafyU=";
+        private const string TestSignatureBase64 = "8rECRwvb/uFcp/MydWhEReGDGaWqQcEdWSFlwUKsO5kAsiynW9HnqNKhbC+pbq6Knf8Dvyqi2Ug+N2LlrfqLAQ==";
 
         private static UpdateManifest Manifest(byte[] payload, string sig="not-base64", string? hash=null) => new("1.0.1", UpdateChannel.Stable, new DateTimeOffset(2026,6,1,0,0,0,TimeSpan.Zero), "1.0.0", 100, new UpdatePackageInfo("u", hash ?? new HashVerifier().ComputeSha256Hex(payload), payload.Length), new UpdateSignatureInfo("Ed25519","k",sig), "n");
         private static string Bundle(bool manifest=true, bool package=true, bool validJson=true, string? hash=null, UpdateManifest? signedManifest=null, byte[]? payloadOverride=null){var path=Path.Combine(Path.GetTempPath(),Guid.NewGuid()+".zip");var payload=payloadOverride??Encoding.UTF8.GetBytes("abc");using var zip=ZipFile.Open(path,ZipArchiveMode.Create);if(manifest){var e=zip.CreateEntry("update.manifest.json");using var s=e.Open();using var w=new StreamWriter(s);w.Write(validJson?JsonSerializer.Serialize(signedManifest??Manifest(payload,hash:hash),new JsonSerializerOptions{PropertyNamingPolicy=JsonNamingPolicy.CamelCase}):"not-json");}if(package){var p=zip.CreateEntry("package.msix");using var s=p.Open();s.Write(payload);}return path;}

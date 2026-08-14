@@ -1,6 +1,6 @@
 // ─────────────────────────────────────────────────────────────────────────────
 //  File: src/TaskTree.Core/Abstractions/ITrayHost.cs
-//  Purpose: System-tray icon, context menu, hotkey hook per Architecture §4.1. Live wiring deferred to Codex Phase 5E.
+//  Purpose: System-tray icon, context menu, hotkey hook per Architecture §4.1.
 //  Architecture.md References: §4.1, §7
 //  Roadmap.md References: Phase 0 — Project Scaffold (Msg 2 — Interfaces)
 //  D1 anti-drift: header cites Architecture.md sections.
@@ -17,9 +17,8 @@ namespace TaskTree.Core.Abstractions;
 /// hotkey hook. Surfaces user intent as events per Architecture.md §4.1.
 /// </summary>
 /// <remarks>
-/// The runtime implementation depends on <c>H.NotifyIcon.Wpf</c> and Win32
-/// <c>RegisterHotKey</c> PInvoke; per Roadmap 1E those concrete bindings are
-/// stubbed and finalized by Codex during Phase 5E.
+/// The runtime implementation uses <c>H.NotifyIcon.Wpf</c> and Win32
+/// <c>RegisterHotKey</c> PInvoke.
 /// </remarks>
 public interface ITrayHost : IDisposable
 {

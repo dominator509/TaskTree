@@ -1,6 +1,7 @@
 // SPEC-DERIVED-PHASE3C  HALT #17/#18/#19/#20
 // Architecture.md Section 9.1.5 rollback strategy.
-// Gap #241/#242/#243: live MSIX rollback, rollback directory, and selection rule require Phase 5E/Architecture documentation.
+// Gap #241/#242/#243: rollback selection and Add-AppxPackage invocation are
+// implemented; installed-package verification remains an environment gate.
 
 using System;
 using System.IO;
@@ -9,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace TaskTree.Modules.AutoUpdater
 {
-    /// <summary>Finds rollback packages and exposes the Phase 5E MSIX rollback stub.</summary>
+    /// <summary>Finds and reinstalls the newest last-known-good MSIX package.</summary>
     public sealed class RollbackService
     {
         private readonly string _rollbackRoot;
@@ -24,7 +25,13 @@ namespace TaskTree.Modules.AutoUpdater
                 .FirstOrDefault();
             return Task.FromResult(newest?.FullName);
         }
-        public Task RollbackAsync() => throw new NotImplementedException("HIGH: MSIX rollback restore requires Add-AppxPackage - Codex Phase 5E");
+        public async Task RollbackAsync()
+        {
+            var packagePath = await FindLastKnownGoodAsync().ConfigureAwait(false);
+            if (packagePath is null)
+                throw new FileNotFoundException("No last-known-good MSIX package was found.", _rollbackRoot);
+            await MsixPackageInstaller.InstallAsync(packagePath).ConfigureAwait(false);
+        }
         private static string GetDefaultRollbackRoot()
         {
             var local = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);

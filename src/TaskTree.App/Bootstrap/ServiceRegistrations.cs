@@ -7,6 +7,7 @@ using System;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using TaskTree.Core.Abstractions;
+using TaskTree.Core;
 using TaskTree.Core.Logging;
 using TaskTree.Core.Models;
 using TaskTree.Core.Security;
@@ -41,7 +42,7 @@ namespace TaskTree.App.Bootstrap
             services.AddSingleton<ToastTier2Adapter>(sp=>new ToastTier2Adapter(sp.GetRequiredService<IAppLogger>(),sp.GetRequiredService<ISessionLockService>()));
             services.AddSingleton<ToastTier3Adapter>(sp=>new ToastTier3Adapter(sp.GetRequiredService<ITrayHost>(),sp.GetRequiredService<IAppLogger>()));
             services.AddSingleton<IReminderDeliveryService>(sp=>new ReminderDeliveryService(sp.GetRequiredService<IReminderScheduler>(),sp.GetRequiredService<ToastTier1Adapter>(),sp.GetRequiredService<ToastTier2Adapter>(),sp.GetRequiredService<ToastTier3Adapter>(),sp.GetRequiredService<IClock>(),sp.GetRequiredService<IAppLogger>(),sp.GetRequiredService<IComplianceCore>(),sp.GetRequiredService<ISnoozeService>()));
-            services.AddSingleton<IOrchestrator>(sp=>new Orchestrator(sp.GetRequiredService<ITaskEngine>(),sp.GetRequiredService<IReminderScheduler>(),sp.GetRequiredService<IComplianceCore>(),sp.GetRequiredService<ITrayHost>(),sp.GetRequiredService<IReminderDeliveryService>(),sp.GetRequiredService<ISettingsService>(),sp.GetRequiredService<ISessionLockService>(),sp.GetRequiredService<IAppLogger>(),sp.GetRequiredService<IClock>()));
+            services.AddSingleton<IOrchestrator>(sp=>new TaskTree.Orchestrator.Orchestrator(sp.GetRequiredService<ITaskEngine>(),sp.GetRequiredService<IReminderScheduler>(),sp.GetRequiredService<IComplianceCore>(),sp.GetRequiredService<ITrayHost>(),sp.GetRequiredService<IReminderDeliveryService>(),sp.GetRequiredService<ISettingsService>(),sp.GetRequiredService<ISessionLockService>(),sp.GetRequiredService<IAppLogger>(),sp.GetRequiredService<IClock>()));
             return services;
         }
     }

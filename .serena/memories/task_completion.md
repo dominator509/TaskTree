@@ -1,8 +1,7 @@
 # Task Completion
 
-- Re-read relevant Architecture/Roadmap/HANDOFF sections before coding; verify current files when handoff state and source tree diverge.
-- For code changes, normal local completion path is restore/build/offline tests: `rtk dotnet restore TaskTree.sln`, `rtk dotnet build TaskTree.sln -c Release`, `rtk dotnet test TaskTree.sln -c Release --filter Category!=Live`.
-- For spec-derived work, also run `rtk powershell -NoProfile -File tools/find-spec-derivations.ps1 -Root .` if marker counts or derivations are touched.
-- For packaging changes, use documented `packaging/build-msix.ps1`; do not treat missing cert/signing/MSIX install prerequisites as code failures.
-- For doc/tooling-only changes, validate syntax/format locally and avoid full app tests unless needed.
-- Always report skipped commands, local environment blockers, and local-only versus live/provider validation boundaries.
+- Read REPO_BRIEF plus Architecture/Roadmap/latest HANDOFF before edits; reconcile source/tests against authority.
+- Local code gate: SDK-backed Debug/Release build with `--no-restore`, then `dotnet test ... --filter TestCategory!=Live`; report exact assembly/test counts.
+- Run marker/static checks when spec-derived files change; run `git diff --check` and final `git diff --name-only` + `git status --short`.
+- Packaging uses documented `packaging/build-msix.ps1`; do not install packages or treat missing certificate/MSIX/provider prerequisites as repo failures.
+- Final acceptance requires evidence for coverage, interactive Windows E2E, MSIX signing/install, provider delivery, owner PHI/support-email inputs, and owner sign-off.

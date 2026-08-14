@@ -33,7 +33,7 @@ TaskTree reminder behavior is designed around local reminder delivery tiers. Sno
 
 ### Session Lock and Privacy Mode
 
-Session lock/privacy mode is designed to protect local task visibility when the user is idle or locked. Real Windows idle detection and re-authentication must be validated in Phase 5E.
+Session lock/privacy mode protects local task visibility when the user is idle or locked through Windows input/session APIs. Real desktop lock/unlock and re-authentication still require Phase 5E validation.
 
 ### Settings
 
@@ -41,16 +41,16 @@ Settings control reminder preferences, privacy behavior, update settings, and co
 
 ### Bug Report Submission
 
-Bug reports are designed to be redacted before queueing or delivery. Local file-drop delivery rejects reports that are not marked redacted. Email and GitHub delivery are stubs until configured and validated in Phase 5E.
+Bug reports are redacted before queueing or delivery. Local file-drop delivery rejects reports that are not marked redacted. Email and GitHub delivery are available with runtime configuration and fail closed when unavailable.
 
 ### Updates
 
-TaskTree includes scaffolding for update manifest parsing, signature verification, package hash verification, staging, offline import, and rollback planning. Live update check/download/apply behavior requires Phase 5E validation.
+TaskTree verifies update manifests and package hashes, stages offline or opt-in HTTPS packages, and invokes the Windows MSIX installer with rollback support. Live update execution still requires Phase 5E validation.
 
 ## Known Limitations
 
 - Live updater download/apply is not validated in generated documentation.
-- Live SMTP/GitHub delivery is not active until Phase 5E.
+- SMTP/GitHub delivery requires deployment configuration and provider validation.
 - MSIX packaging/signing/install requires live Windows tooling.
 - Tray/UI latency, idle RAM, CPU, and first-launch behavior require installed-app validation.
 - Final compliance status requires organizational policy review and Phase 5F sign-off.

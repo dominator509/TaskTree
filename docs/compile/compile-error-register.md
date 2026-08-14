@@ -109,9 +109,9 @@ Compiler error code: N/A
 Message: `rtk: Failed to resolve 'dotnet' via PATH, falling back to direct exec: Binary 'dotnet' not found on PATH`; `where dotnet` finds no match; neither standard Program Files `dotnet.exe` path exists in this environment.
 Root cause category: Local environment/toolchain missing
 Proposed fix: Re-run Phase 5B restore/build commands in an environment with the .NET 8 SDK installed and available on PATH, or install/provision the SDK with owner approval.
-Status: Deferred
-Resolution reference: None in this environment.
-Follow-up gap: #384 remains open for actual Claude/Codex compile execution with real restore/build outputs.
+Status: Resolved
+Resolution reference: P5B-R027
+Follow-up gap: None for Phase 5B restore/build proof; live/package validation remains Phase 5E/5F-owned.
 
 ### P5B-E003 - IAppLogger Error Contract Drift
 
@@ -249,7 +249,7 @@ Status: Resolved
 Resolution reference: P5B-R009
 Follow-up gap: Build/test verification remains deferred to an environment with the .NET SDK available.
 
-### P5B-E011 - Tier 2 Obsolete Window Deletion Build Gate Unmet
+### P5B-E011 - Tier 2 Obsolete Window Deletion Build Gate
 
 Error ID: P5B-E011
 Command: Static Phase 5A deletion precondition audit via `rtk rg -n ReminderToast src/TaskTree.Orchestrator/ToastTier2Adapter.cs`, `rtk rg -n TaskTree.UI.csproj src/TaskTree.Orchestrator/TaskTree.Orchestrator.csproj`, and `rtk dotnet restore TaskTree.sln`
@@ -262,9 +262,9 @@ Compiler error code: N/A
 Message: The Tier 2 deletion manifest's source-reference preconditions are satisfied, but its required build-before-delete gate cannot be executed locally because the .NET SDK is unavailable.
 Root cause category: Local environment/toolchain missing
 Proposed fix: Run `dotnet build TaskTree.sln -c Release` in an environment with the .NET SDK available, then delete the obsolete `ToastTier2Window` files only after that build precondition passes.
-Status: Deferred
-Resolution reference: None in this environment.
-Follow-up gap: Obsolete Tier 2 files remain intentionally present until the Release build precondition is proven.
+Status: Resolved
+Resolution reference: P5B-R027
+Follow-up gap: None for the obsolete Tier 2 file pair; live toast behavior remains Phase 5E-owned.
 
 ### P5B-E012 - Tier 2 Deletion Manifest Grep Drift
 
@@ -548,9 +548,43 @@ File: `docs/compile/project-reference-reconciliation.md`; `docs/compile/phase5b-
 Line: Phase 5B gap status tables
 Column: N/A
 Compiler error code: N/A
-Message: Several Phase 5B gap rows still said `Partially applied` even though current static audits now prove project/reference, namespace, package/import, XAML/code-behind, duplicate full-type, DI status, and solution Debug/Release configuration reconciliation. Build proof remains separately blocked by the missing SDK.
+Message: Several Phase 5B gap rows still said `Partially applied` even though current static audits now prove project/reference, namespace, package/import, XAML/code-behind, duplicate full-type, DI status, and solution Debug/Release configuration reconciliation. Build proof was separately gated at the time and is now closed by `P5B-R027`.
 Root cause category: Project inventory drift
 Proposed fix: Update the affected status rows to `Reconciled statically; build proof deferred` or equivalent precise wording, without claiming Phase 5B acceptance.
 Status: Resolved
 Resolution reference: P5B-R026
-Follow-up gap: Restore/build/test proof remains deferred until a .NET SDK is available.
+Follow-up gap: None; SDK-backed restore/build/test proof was later closed by `P5B-R027` and `P5B-R028`.
+
+### P5B-E029 - SDK-Backed Compile Closure Errors
+
+Error ID: P5B-E029
+Command: `rtk C:\Users\domin\.dotnet\dotnet.exe build TaskTree.sln -c Debug`; `rtk C:\Users\domin\.dotnet\dotnet.exe build TaskTree.sln -c Release`
+Configuration: Debug / Release
+Project: Multiple production and test projects
+File: `src/TaskTree.Core/Models/TaskNode.cs`; `src/TaskTree.Core/Security/AesGcmCryptoProvider.cs`; `src/TaskTree.Modules.*`; `src/TaskTree.App`; `tests/*`
+Line: Multiple compiler output lines
+Column: N/A
+Compiler error code: CS0104 / CS0419 / CS1674 / CS0103 / CS1061 / CS1503 / CS0854 / CS0723 / CS0246 / CS0118
+Message: First SDK-backed Debug builds exposed real compile blockers hidden by the prior missing-SDK environment: `TaskStatus` ambiguity from implicit usings, ambiguous XML cref, non-disposable NSec `PublicKey`, missing DPAPI package reference, inaccessible BugReporter test seam, stale Moq optional-argument expressions, stale App host `CompositionRoot` instance use, missing production `Clock`, and Orchestrator namespace/type ambiguity.
+Root cause category: Interface contract drift
+Proposed fix: Apply compile-only aliases, XML-doc clarification, package/reference reconciliation, friend assembly metadata, Moq optional-argument fixes, DI/App host alignment, and production `IClock` implementation.
+Status: Resolved
+Resolution reference: P5B-R027
+Follow-up gap: None for Debug/Release compile closure.
+
+### P5B-E030 - SDK-Backed Non-Live Test Gate Drift
+
+Error ID: P5B-E030
+Command: `rtk C:\Users\domin\.dotnet\dotnet.exe test TaskTree.sln -c Release --filter TestCategory!=Live`
+Configuration: Release
+Project: `TaskTree.Core.Tests`; `TaskTree.Modules.SecureStore.Tests`; `TaskTree.Modules.ReminderScheduler.Tests`; `TaskTree.Modules.AutoUpdater.Tests`; `TaskTree.Modules.BugReporter.Tests`
+File: `tests/TaskTree.Core.Tests/Security/AesGcmCryptoProviderTests.cs`; `tests/TaskTree.Modules.SecureStore.Tests/SecureStoreTests.cs`; `tests/TaskTree.Modules.ReminderScheduler.Tests/ReminderSchedulerTests.cs`; `tests/TaskTree.Modules.AutoUpdater.Tests/OfflineImportServiceTests.cs`; `tests/TaskTree.Modules.BugReporter.Tests/BugReportRateLimiterTests.cs`
+Line: Multiple test failure lines
+Column: N/A
+Compiler error code: N/A
+Message: Release non-live tests initially failed on exact .NET 8 AES-GCM exception subtype assertions, scheduler tests using cadences below the documented one-second minimum, a stale Ed25519 positive offline-import vector, and a rate-limiter test that checked the next calendar day instead of the same-day 50/day boundary.
+Root cause category: Test coverage drift
+Proposed fix: Align tests with .NET 8 `AuthenticationTagMismatchException`, keep scheduler tests within the documented cadence range, regenerate the test-only Ed25519 vector for the current canonical payload, and correct the same-day rate-limit boundary assertion.
+Status: Resolved
+Resolution reference: P5B-R028
+Follow-up gap: None for the non-live Release test gate.

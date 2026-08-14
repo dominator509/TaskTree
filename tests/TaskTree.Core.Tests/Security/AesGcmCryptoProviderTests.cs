@@ -45,7 +45,7 @@ public sealed class AesGcmCryptoProviderTests
         CollectionAssert.AreEqual(plaintext, decrypted);
     }
 
-    /// <summary>Tampered ciphertext byte → Decrypt throws CryptographicException per §10.7 integrity controls.</summary>
+    /// <summary>Tampered ciphertext byte → Decrypt throws the .NET 8 GCM authentication exception per §10.7 integrity controls.</summary>
     [TestMethod]
     public void Decrypt_TamperedCiphertext_ThrowsCryptographicException()
     {
@@ -58,6 +58,6 @@ public sealed class AesGcmCryptoProviderTests
         // Flip one bit inside the ciphertext middle (after nonce, before tag).
         encrypted[AesGcmCryptoProvider.NonceSize + 1] ^= 0x01;
 
-        Assert.ThrowsException<CryptographicException>(() => provider.Decrypt(encrypted, key));
+        Assert.ThrowsException<AuthenticationTagMismatchException>(() => provider.Decrypt(encrypted, key));
     }
 }

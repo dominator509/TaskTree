@@ -1,6 +1,7 @@
 // SPEC-DERIVED-PHASE3E  HALT #15/#16/#17/#18
 // Architecture.md Section 9.2.4 routing matrix and Section 9.2.6 rate limit.
-// Gap #272/#273/#274: BugSeverity enum reconciliation, partial retry semantics, and live adapter replacement deferred.
+// Gap #272/#273/#274: routing and runtime adapters are now fail-closed when
+// deployment credentials are absent.
 
 using System;
 using System.Collections.Generic;
@@ -37,7 +38,7 @@ namespace TaskTree.Modules.BugReporter
                     var result = await adapter.DeliverAsync(report).ConfigureAwait(false);
                     if(result.Success){if(outbound)_rateLimiter.RecordSend(_clock.UtcNow);} else failures.Add($"{adapter.Channel}: {result.Message}");
                 }
-                catch(NotImplementedException ex){failures.Add($"{adapter.Channel}: {ex.Message}");}
+                catch(Exception ex){failures.Add($"{adapter.Channel}: {ex.GetType().Name}");}
             }
             return failures.Count==0 ? new BugReportDeliveryResult(true,"Router","Delivered") : new BugReportDeliveryResult(false,"Router",string.Join("; ",failures));
         }
