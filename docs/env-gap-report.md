@@ -5,7 +5,7 @@
 
 ## Implemented
 
-- Tray host: `H.NotifyIcon.Wpf`, context menu, balloon delivery, message-only hotkey window, and `RegisterHotKey`/`UnregisterHotKey` wrappers.
+- Tray host: `H.NotifyIcon.Wpf`, context menu, balloon delivery, message-only hotkey window, persisted `HotkeyManager` configuration, and `RegisterHotKey`/`UnregisterHotKey` wrappers.
 - Compliance/session: `GetLastInputInfo` idle polling, workstation lock request, input-desktop lock detection, audit/event propagation, and disposal.
 - Updater: HTTPS manifest polling, Ed25519 verification, channel/rollout checks, hash-verified download/staging when explicitly enabled, MSIX installation through `Add-AppxPackage`, and last-known-good rollback.
 - Bug reporting: runtime-configured SMTP and GitHub Issues delivery. Missing configuration returns an explicit failure and never logs credentials.

@@ -40,13 +40,14 @@ namespace TaskTree.Modules.TrayHost
         private readonly IAppLogger _logger;
 
         private readonly IComplianceCore _compliance;
+        private readonly HotkeyManager? _hotkeyManager;
         private TaskbarIcon? _taskbarIcon;
         private HwndSource? _hotkeyWindow;
         private bool _hotkeyRegistered;
+        private bool _trayOwnsHotkeyRegistration;
         private bool _initialized;
         private bool _disposed;
 
-        private const int HotkeyId = 0x5454;
         private const int WmHotkey = 0x0312;
         private static readonly IntPtr HwndMessage = new(-3);
 
@@ -61,9 +62,20 @@ namespace TaskTree.Modules.TrayHost
         /// <c>_compliance.AuditAsync</c> on every Show/Add/Exit event (Gap #57).
         /// </remarks>
         public TrayHost(IAppLogger logger, IComplianceCore compliance)
+            : this(logger, compliance, hotkeyManager: null)
+        {
+        }
+
+        /// <summary>
+        /// Creates a tray host with the persisted hotkey manager used by the
+        /// application composition root. The legacy two-argument constructor
+        /// remains available for isolated callers and tests.
+        /// </summary>
+        public TrayHost(IAppLogger logger, IComplianceCore compliance, HotkeyManager? hotkeyManager)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _compliance = compliance ?? throw new ArgumentNullException(nameof(compliance));
+            _hotkeyManager = hotkeyManager;
         }
 
         /// <inheritdoc />
@@ -108,11 +120,20 @@ namespace TaskTree.Modules.TrayHost
                 };
                 _hotkeyWindow = new HwndSource(sourceParameters);
                 _hotkeyWindow.AddHook(WindowMessageFilter);
-                HotkeyInterop.Register(
-                    _hotkeyWindow.Handle,
-                    HotkeyId,
-                    HotkeyInterop.BuildModifierFlags(ctrl: true, alt: true, shift: false, win: false),
-                    0x54);
+                if (_hotkeyManager is null)
+                {
+                    HotkeyInterop.Register(
+                        _hotkeyWindow.Handle,
+                        HotkeyManager.HotkeyId,
+                        HotkeyInterop.BuildModifierFlags(ctrl: true, alt: true, shift: false, win: false),
+                        0x54);
+                    _trayOwnsHotkeyRegistration = true;
+                }
+                else
+                {
+                    _hotkeyManager.InitializeAsync(_hotkeyWindow.Handle).GetAwaiter().GetResult();
+                    _trayOwnsHotkeyRegistration = false;
+                }
                 _hotkeyRegistered = true;
                 _initialized = true;
                 RecordAudit("TrayInitialized");
@@ -198,7 +219,7 @@ namespace TaskTree.Modules.TrayHost
 
         private IntPtr WindowMessageFilter(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
         {
-            if (msg == WmHotkey && wParam.ToInt32() == HotkeyId)
+            if (msg == WmHotkey && wParam.ToInt32() == HotkeyManager.HotkeyId)
             {
                 RaiseShowTreeRequested();
                 RecordAudit("GlobalHotkeyPressed");
@@ -268,12 +289,18 @@ namespace TaskTree.Modules.TrayHost
 
         private void DisposeNativeResources()
         {
-            if (_hotkeyRegistered && _hotkeyWindow is not null)
+            if (_hotkeyManager is not null)
             {
-                try { HotkeyInterop.Unregister(_hotkeyWindow.Handle, HotkeyId); }
+                try { _hotkeyManager.Dispose(); }
+                catch (Exception ex) { _logger.LogWarning("Managed hotkey disposal failed: {0}", ex.Message); }
+            }
+            if (_hotkeyRegistered && _trayOwnsHotkeyRegistration && _hotkeyWindow is not null)
+            {
+                try { HotkeyInterop.Unregister(_hotkeyWindow.Handle, HotkeyManager.HotkeyId); }
                 catch (Exception ex) { _logger.LogWarning("Hotkey unregister failed: {0}", ex.Message); }
             }
             _hotkeyRegistered = false;
+            _trayOwnsHotkeyRegistration = false;
             if (_hotkeyWindow is not null)
             {
                 _hotkeyWindow.RemoveHook(WindowMessageFilter);

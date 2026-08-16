@@ -13,7 +13,9 @@ namespace TaskTree.Modules.TrayHost
     /// <summary>Persists and registers the configured global hotkey.</summary>
     public sealed class HotkeyManager : IDisposable
     {
-        private const int HotkeyId = 0x5455;
+        // Shared with TrayHost's message filter; internal keeps the registration
+        // identity out of the public contract while preventing drift.
+        internal const int HotkeyId = 0x5455;
 
         /// <summary>Result values used when replacing a global hotkey binding.</summary>
         public enum HotkeyRegistrationResult

@@ -15,6 +15,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using TaskTree.App.Bootstrap;
 using TaskTree.Core.Abstractions;
 using TaskTree.Core.Models;
+using TaskTree.Modules.TrayHost;
 
 namespace TaskTree.Orchestrator.Tests;
 
@@ -73,6 +74,7 @@ public class ServiceRegistrationsTests
         Assert.IsTrue(registered.Contains(typeof(ITaskEngine)));
         Assert.IsTrue(registered.Contains(typeof(IReminderScheduler)));
         Assert.IsTrue(registered.Contains(typeof(ITrayHost)));
+        Assert.IsTrue(registered.Contains(typeof(HotkeyManager)));
         Assert.IsTrue(registered.Contains(typeof(IReminderDeliveryService)));
         Assert.IsTrue(registered.Contains(typeof(ISettingsService)));
         Assert.IsTrue(registered.Contains(typeof(ISessionLockService)));
@@ -125,5 +127,13 @@ public class ServiceRegistrationsTests
         using var provider = BuildOverriddenServices().BuildServiceProvider(validateScopes: true);
         var delivery = provider.GetRequiredService<IReminderDeliveryService>();
         Assert.IsNotNull(delivery);
+    }
+
+    [TestMethod, TestCategory("Offline")]
+    public void BuildServiceProvider_ResolvesHotkeyManager_WithPersistedStoreDependencies()
+    {
+        using var provider = BuildOverriddenServices().BuildServiceProvider(validateScopes: true);
+        var manager = provider.GetRequiredService<HotkeyManager>();
+        Assert.IsNotNull(manager);
     }
 }

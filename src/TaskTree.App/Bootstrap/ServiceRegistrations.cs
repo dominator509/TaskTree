@@ -37,7 +37,8 @@ namespace TaskTree.App.Bootstrap
             services.AddSingleton<ISessionLockService>(sp=>new SessionLockService(sp.GetRequiredService<IClock>(),sp.GetRequiredService<IComplianceCore>(),sp.GetRequiredService<IAppLogger>()));
             services.AddSingleton<ITaskEngine>(sp=>new TaskEngine(sp.GetRequiredService<ISecureStore>(),sp.GetRequiredService<IClock>(),sp.GetRequiredService<IAppLogger>(),sp.GetRequiredService<IComplianceCore>()));
             services.AddSingleton<IReminderScheduler>(sp=>new ReminderScheduler(sp.GetRequiredService<IClock>(),sp.GetRequiredService<ITaskEngine>(),sp.GetRequiredService<IComplianceCore>(),sp.GetRequiredService<IAppLogger>()));
-            services.AddSingleton<ITrayHost>(sp=>new TrayHost(sp.GetRequiredService<IAppLogger>(),sp.GetRequiredService<IComplianceCore>()));
+            services.AddSingleton<HotkeyManager>(sp=>new HotkeyManager(sp.GetRequiredService<IAppLogger>(),sp.GetRequiredService<IComplianceCore>(),sp.GetRequiredService<ISecureStore>(),sp.GetRequiredService<IClock>()));
+            services.AddSingleton<ITrayHost>(sp=>new TrayHost(sp.GetRequiredService<IAppLogger>(),sp.GetRequiredService<IComplianceCore>(),sp.GetRequiredService<HotkeyManager>()));
             services.AddSingleton<ToastTier1Adapter>(sp=>new ToastTier1Adapter(sp.GetRequiredService<IAppLogger>()));
             services.AddSingleton<ToastTier2Adapter>(sp=>new ToastTier2Adapter(sp.GetRequiredService<IAppLogger>(),sp.GetRequiredService<ISessionLockService>()));
             services.AddSingleton<ToastTier3Adapter>(sp=>new ToastTier3Adapter(sp.GetRequiredService<ITrayHost>(),sp.GetRequiredService<IAppLogger>()));
