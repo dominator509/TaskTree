@@ -190,10 +190,16 @@ namespace TaskTree.Modules.ReminderScheduler.Tests
             {
                 s.Cadence = TimeSpan.FromSeconds(1);
                 int callCount = 0;
-                s.ReminderDue += (_, _) => Interlocked.Increment(ref callCount);
+                var tickObserved = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+                s.ReminderDue += (_, _) =>
+                {
+                    Interlocked.Increment(ref callCount);
+                    tickObserved.TrySetResult(true);
+                };
                 await s.StartAsync(CancellationToken.None);
-                await Task.Delay(1250);
+                var completed = await Task.WhenAny(tickObserved.Task, Task.Delay(TimeSpan.FromSeconds(3)));
                 await s.StopAsync();
+                Assert.AreSame(tickObserved.Task, completed, "Reminder loop did not produce a tick within the bounded test window.");
                 Assert.IsTrue(callCount >= 1, $"Expected >= 1 tick; got {callCount}");
             }
             finally { s.Dispose(); }

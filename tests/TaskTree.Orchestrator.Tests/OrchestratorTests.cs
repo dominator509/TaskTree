@@ -55,6 +55,19 @@ namespace TaskTree.Orchestrator.Tests
         }
 
         [TestMethod, TestCategory("Offline")]
+        public async Task StartAsync_SubscriptionToAutoLogoff_IsRemovedOnStop()
+        {
+            var h = Harness.Create();
+            var orchestrator = h.Create();
+
+            await orchestrator.StartAsync(CancellationToken.None);
+            Assert.AreEqual(1, h.AutoLogoffSubscriptions);
+
+            await orchestrator.StopAsync();
+            Assert.AreEqual(0, h.AutoLogoffSubscriptions);
+        }
+
+        [TestMethod, TestCategory("Offline")]
         public async Task StartAsync_FlushesBugReportsAndPollsUpdater()
         {
             var h = Harness.Create();
@@ -92,6 +105,7 @@ namespace TaskTree.Orchestrator.Tests
             Assert.AreEqual(0, h.TrayHostAddTaskSubscriptions);
             Assert.AreEqual(0, h.TrayHostExitSubscriptions);
             Assert.AreEqual(0, h.SessionLockSubscriptions);
+            Assert.AreEqual(0, h.AutoLogoffSubscriptions);
             h.SessionLock.Verify(x => x.StopAsync(), Times.Once);
             h.ReminderScheduler.Verify(x => x.StopAsync(), Times.Once);
             h.ReminderDelivery.Verify(x => x.StopAsync(), Times.Once);
@@ -127,6 +141,7 @@ namespace TaskTree.Orchestrator.Tests
             Assert.AreEqual(0, h.TrayHostAddTaskSubscriptions);
             Assert.AreEqual(0, h.TrayHostExitSubscriptions);
             Assert.AreEqual(0, h.SessionLockSubscriptions);
+            Assert.AreEqual(0, h.AutoLogoffSubscriptions);
             h.SessionLock.Verify(x => x.StopAsync(), Times.Once);
             h.ReminderDelivery.Verify(x => x.StopAsync(), Times.Once);
             h.ReminderScheduler.Verify(x => x.StopAsync(), Times.Once);
@@ -228,6 +243,9 @@ namespace TaskTree.Orchestrator.Tests
                 SessionLock.Setup(x => x.StartAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
                 SessionLock.Setup(x => x.StopAsync()).Returns(Task.CompletedTask);
 
+                Compliance.SetupAdd(x => x.AutoLogoffTriggered += It.IsAny<EventHandler>()).Callback<EventHandler>(_ => AutoLogoffSubscriptions++);
+                Compliance.SetupRemove(x => x.AutoLogoffTriggered -= It.IsAny<EventHandler>()).Callback<EventHandler>(_ => AutoLogoffSubscriptions--);
+
                 TrayHost.SetupAdd(x => x.ShowTreeRequested += It.IsAny<EventHandler>()).Callback<EventHandler>(_ => TrayHostShowTreeSubscriptions++);
                 TrayHost.SetupRemove(x => x.ShowTreeRequested -= It.IsAny<EventHandler>()).Callback<EventHandler>(_ => TrayHostShowTreeSubscriptions--);
                 TrayHost.SetupAdd(x => x.AddTaskRequested += It.IsAny<EventHandler>()).Callback<EventHandler>(_ => TrayHostAddTaskSubscriptions++);
@@ -261,6 +279,7 @@ namespace TaskTree.Orchestrator.Tests
             public int TrayHostAddTaskSubscriptions { get; private set; }
             public int TrayHostExitSubscriptions { get; private set; }
             public int SessionLockSubscriptions { get; private set; }
+            public int AutoLogoffSubscriptions { get; private set; }
 
             public static Harness Create() => new();
 

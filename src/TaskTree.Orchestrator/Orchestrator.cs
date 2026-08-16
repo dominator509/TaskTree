@@ -18,7 +18,7 @@ namespace TaskTree.Orchestrator
     public sealed class Orchestrator : IOrchestrator, IDisposable
     {
         private readonly ITaskEngine _taskEngine; private readonly IReminderScheduler _reminderScheduler; private readonly IComplianceCore _compliance; private readonly ITrayHost _trayHost; private readonly IReminderDeliveryService _reminderDeliveryService; private readonly ISettingsService _settingsService; private readonly ISessionLockService _sessionLock; private readonly IAppLogger _logger; private readonly IClock _clock; private readonly IAutoUpdater? _autoUpdater; private readonly IBugReporter? _bugReporter; private readonly TimeSpan _updatePollInterval;
-        private readonly SemaphoreSlim _gate = new(1,1); private EventHandler? _showTreeHandler,_addTaskHandler,_exitHandler; private EventHandler<SessionLockChangedEventArgs>? _sessionLockHandler; private bool _running,_disposed,_mainWindowHiddenBySessionLock; private MainWindow? _mainWindow; private MainWindowViewModel? _mainWindowViewModel; private CancellationTokenSource? _updatePollingCts; private Task? _updatePollingTask;
+        private readonly SemaphoreSlim _gate = new(1,1); private EventHandler? _showTreeHandler,_addTaskHandler,_exitHandler,_autoLogoffHandler; private EventHandler<SessionLockChangedEventArgs>? _sessionLockHandler; private bool _running,_disposed,_mainWindowHiddenBySessionLock; private MainWindow? _mainWindow; private MainWindowViewModel? _mainWindowViewModel; private CancellationTokenSource? _updatePollingCts; private Task? _updatePollingTask;
         public Orchestrator(ITaskEngine taskEngine, IReminderScheduler reminderScheduler, IComplianceCore compliance, ITrayHost trayHost, IReminderDeliveryService reminderDeliveryService, ISettingsService settingsService, ISessionLockService sessionLock, IAppLogger logger, IClock clock, IAutoUpdater? autoUpdater = null, IBugReporter? bugReporter = null, TimeSpan? updatePollInterval = null)
         { _taskEngine=taskEngine??throw new ArgumentNullException(nameof(taskEngine)); _reminderScheduler=reminderScheduler??throw new ArgumentNullException(nameof(reminderScheduler)); _compliance=compliance??throw new ArgumentNullException(nameof(compliance)); _trayHost=trayHost??throw new ArgumentNullException(nameof(trayHost)); _reminderDeliveryService=reminderDeliveryService??throw new ArgumentNullException(nameof(reminderDeliveryService)); _settingsService=settingsService??throw new ArgumentNullException(nameof(settingsService)); _sessionLock=sessionLock??throw new ArgumentNullException(nameof(sessionLock)); _logger=logger??throw new ArgumentNullException(nameof(logger)); _clock=clock??throw new ArgumentNullException(nameof(clock)); _autoUpdater=autoUpdater; _bugReporter=bugReporter; _updatePollInterval=updatePollInterval??TimeSpan.FromHours(24); if(_updatePollInterval<=TimeSpan.Zero)throw new ArgumentOutOfRangeException(nameof(updatePollInterval),"Update poll interval must be positive."); }
         public async Task StartAsync(CancellationToken ct)
@@ -46,10 +46,12 @@ namespace TaskTree.Orchestrator
                     if (System.Windows.Application.Current is not null) System.Windows.Application.Current.Shutdown();
                 };
                 _sessionLockHandler = OnSessionLockChanged;
+                _autoLogoffHandler = OnAutoLogoffTriggered;
                 _trayHost.ShowTreeRequested += _showTreeHandler;
                 _trayHost.AddTaskRequested += _addTaskHandler;
                 _trayHost.ExitRequested += _exitHandler;
                 _sessionLock.SessionLockChanged += _sessionLockHandler;
+                _compliance.AutoLogoffTriggered += _autoLogoffHandler;
 
                 trayInitializationAttempted = true;
                 _trayHost.Initialize();
@@ -119,6 +121,8 @@ namespace TaskTree.Orchestrator
         }
         private async void OnShowTreeRequested(object? sender, EventArgs e){try{_mainWindowViewModel??=new MainWindowViewModel(_taskEngine,_clock,_logger,_settingsService);_mainWindow??=new MainWindow(_mainWindowViewModel);await _mainWindowViewModel.InitializeAsync().ConfigureAwait(true);if(!_mainWindow.IsVisible)_mainWindow.Show();else{_mainWindow.Visibility=System.Windows.Visibility.Visible;if(_mainWindow.WindowState==System.Windows.WindowState.Minimized)_mainWindow.WindowState=System.Windows.WindowState.Normal;_mainWindow.Activate();}_mainWindowHiddenBySessionLock=false;}catch(Exception ex){_logger.LogError(ex,"OnShowTreeRequested failed: {0}: {1}",ex.GetType().Name,ex.Message);}}
         private void OnSessionLockChanged(object? sender, SessionLockChangedEventArgs e){try{var window=_mainWindow;if(window is null)return;if(window.Dispatcher.CheckAccess())ApplySessionLockState(e);else window.Dispatcher.BeginInvoke(new Action(()=>ApplySessionLockState(e)));}catch(Exception ex){_logger.LogError(ex,"OnSessionLockChanged failed: {0}: {1}",ex.GetType().Name,ex.Message);}}
+        private void OnAutoLogoffTriggered(object? sender, EventArgs e){try{var window=_mainWindow;if(window is null)return;if(window.Dispatcher.CheckAccess())HideMainWindowForAutoLogoff();else window.Dispatcher.BeginInvoke(new Action(HideMainWindowForAutoLogoff));}catch(Exception ex){_logger.LogError(ex,"OnAutoLogoffTriggered failed: {0}: {1}",ex.GetType().Name,ex.Message);}}
+        private void HideMainWindowForAutoLogoff(){try{if(_mainWindow is null || !_mainWindow.IsVisible)return;_mainWindow.Hide();_mainWindowHiddenBySessionLock=true;_logger.LogInformation("MainWindow hidden due to compliance auto-logoff.");}catch(Exception ex){_logger.LogError(ex,"Auto-logoff window hide failed: {0}: {1}",ex.GetType().Name,ex.Message);}}
         private void ApplySessionLockState(SessionLockChangedEventArgs e){try{if(e.IsLocked && _mainWindow is not null && _mainWindow.IsVisible){_mainWindow.Hide();_mainWindowHiddenBySessionLock=true;_logger.LogInformation("MainWindow hidden due to session lock.");}else if(!e.IsLocked && _mainWindowHiddenBySessionLock){_mainWindowHiddenBySessionLock=false;_logger.LogInformation("Session unlocked; MainWindow remains hidden until user reopens.");}}catch(Exception ex){_logger.LogError(ex,"OnSessionLockChanged dispatcher callback failed: {0}: {1}",ex.GetType().Name,ex.Message);}}
         private async Task CleanupFailedStartAsync(bool trayInitializationAttempted, bool sessionLockStartAttempted, bool schedulerStartAttempted, bool deliveryStartAttempted)
         {
@@ -257,10 +261,14 @@ namespace TaskTree.Orchestrator
             var sessionLockHandler = _sessionLockHandler;
             if (sessionLockHandler is not null)
                 TryCleanup("SessionLockChanged unsubscribe", () => _sessionLock.SessionLockChanged -= sessionLockHandler, failures);
+            var autoLogoffHandler = _autoLogoffHandler;
+            if (autoLogoffHandler is not null)
+                TryCleanup("AutoLogoffTriggered unsubscribe", () => _compliance.AutoLogoffTriggered -= autoLogoffHandler, failures);
             _showTreeHandler = null;
             _addTaskHandler = null;
             _exitHandler = null;
             _sessionLockHandler = null;
+            _autoLogoffHandler = null;
         }
 
         private void CloseMainWindow()
