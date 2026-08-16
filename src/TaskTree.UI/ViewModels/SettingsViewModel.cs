@@ -1,6 +1,6 @@
 // SPEC-DERIVED-PHASE2E  Msg 2 Settings UI ViewModel
 // Gap #157 closure path: Settings UI surface emitted.
-// Gap #158/#159: Runtime theme application remains deferred; this VM persists preference only.
+// Gap #158/#159 closure: MainWindow applies the persisted theme preference at runtime.
 
 using System;
 using System.Threading.Tasks;
