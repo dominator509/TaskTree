@@ -84,4 +84,11 @@ public sealed class HashChainTests
 
         Assert.IsFalse(HashChain.VerifyChain(new List<AuditEntry> { entry1, entry3 }));
     }
+
+    /// <summary>VerifyChain fails closed when persisted data contains a null entry.</summary>
+    [TestMethod]
+    public void VerifyChain_NullEntry_ReturnsFalse()
+    {
+        Assert.IsFalse(HashChain.VerifyChain(new List<AuditEntry> { null! }));
+    }
 }

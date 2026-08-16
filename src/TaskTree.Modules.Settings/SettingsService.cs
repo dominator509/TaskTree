@@ -35,7 +35,11 @@ namespace TaskTree.Modules.Settings
             try
             {
                 var settings = await _secureStore.LoadAsync<TaskTreeSettings>(StorageKey).ConfigureAwait(false);
-                return settings ?? TaskTreeSettings.Default;
+                if (settings is null)
+                    return TaskTreeSettings.Default;
+
+                Validate(settings);
+                return settings;
             }
             catch (Exception ex)
             {

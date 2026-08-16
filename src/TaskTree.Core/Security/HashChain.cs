@@ -103,6 +103,9 @@ public static class HashChain
         for (int i = 0; i < entries.Count; i++)
         {
             var e = entries[i];
+            if (e is null)
+                return false;
+
             if (e.Seq != expectedSeq++)
                 return false;
 
