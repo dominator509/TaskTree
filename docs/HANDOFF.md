@@ -139,7 +139,7 @@ A comprehensive flat-merge consolidation of HANDOFF.md v1.0.0 through v1.0.14 wi
 
 ---
 
-## Current Verified State (additive v1.0.63)
+## Current Verified State (additive v1.0.64)
 
 This section records the current checkout without deleting the historical v1.0.14 delta above. It supersedes the historical Phase 1D next-action block for current execution; `Roadmap.md`, `Architecture.md`, and the owner gates remain authoritative.
 
@@ -148,9 +148,9 @@ This section records the current checkout without deleting the historical v1.0.1
 | Phases 0-4 | Implemented in the current source tree; offline contracts and hardening lanes are green. | `TaskTree.sln`, `tests/`, `docs/test-gap-report.md` |
 | Phase 5A | Repository stitches and namespaces resolve. | Release build, derivation registry |
 | Phase 5B | Compile gap closure is green. | Release build: 0 warnings, 0 errors |
-| Phase 5C | Local gate complete: 383 non-live, non-performance contract tests pass; 7 measurable performance tests pass; the last fully converted production coverage report is 1,651/2,137 lines (77.26%). | `docs/test-gap-report.md` |
+| Phase 5C | Local gate complete: 386 non-live, non-performance contract tests pass; 7 measurable performance tests pass; the last fully converted production coverage report is 1,651/2,137 lines (77.26%). | `docs/test-gap-report.md` |
 | Phase 5D | Offline composition is green; persisted hotkeys validate before native registration and serialize config/disposal, session-lock and compliance idle-monitor lifecycles are serialized, reminder delivery drains in-flight callbacks during stop, scheduler timer ownership is stable across stop, and orchestrator lifecycle failure paths unwind safely. | `docs/integration-gap-report.md`, focused lifecycle tests |
-| Phase 5E | Code paths are implemented; staged updater packages and first-launch sentinels promote through temporary files, unsafe version path components and incomplete offline package metadata fail closed, concurrent updater checks/applies and state transitions are synchronized, SMTP/GitHub calls are bounded, crash-hook registration is idempotent, and bug-report file drops plus outbound limiter/router state are serialized. Live Windows/provider/package evidence remains open. | `docs/env-gap-report.md`, `src/TaskTree.Modules.AutoUpdater/`, `src/TaskTree.Modules.BugReporter/` |
+| Phase 5E | Code paths are implemented; staged updater packages and first-launch sentinels promote through temporary files, unsafe version path components and incomplete offline package metadata fail closed, concurrent updater checks/applies and state transitions are synchronized, SMTP/GitHub calls are bounded, crash-hook registration is idempotent, bug-report queue retention is encrypted and purges delivered/failed records after 7/30 days, and file-drop plus outbound limiter/router state is serialized. Live Windows/provider/package evidence remains open. | `docs/env-gap-report.md`, `src/TaskTree.Modules.AutoUpdater/`, `src/TaskTree.Modules.BugReporter/` |
 | Phase 5F | Not complete. Owner sign-off and release archive remain open. | `docs/final-validation-report.md` |
 
 ### Current carry-forward blockers
@@ -172,3 +172,4 @@ This section records the current checkout without deleting the historical v1.0.1
 | 1.0.61 | 2026-08-16 | Snooze/reminder lifecycle, logger rotation, and updater sentinel/import/state integrity hardening recorded with refreshed validation evidence. |
 | 1.0.62 | 2026-08-16 | Updater operation serialization and compliance idle-monitor disposal hardening recorded with refreshed validation evidence. |
 | 1.0.63 | 2026-08-16 | Hotkey, provider timeout, crash-hook, session lifecycle, and scheduler timer hardening recorded with refreshed validation evidence. |
+| 1.0.64 | 2026-08-16 | Bug-report retention metadata, pending-only retries, 7/30-day purge behavior, and refreshed validation evidence recorded. |

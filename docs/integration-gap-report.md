@@ -17,6 +17,7 @@
 - Session-lock start/stop/dispose operations are serialized, and reminder loop instances retain their own timer reference after stop detaches shared lifecycle fields.
 - Orchestrator startup failure now unwinds attempted dependency starts and event subscriptions; shutdown continues through remaining dependencies before reporting aggregate failures.
 - Reminder delivery now tracks asynchronous due-event callbacks, cancels and drains them during stop, and ignores callbacks that arrive after the service is stopped.
+- BugReporter queue retention is locally wired through the existing secure-store boundary; flushes retry pending reports and leave delivered history for the documented retention window.
 
 ## Not Verified Here
 

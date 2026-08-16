@@ -23,15 +23,17 @@ namespace TaskTree.Modules.BugReporter
         public async Task<Guid> SubmitAsync(BugReport report){if(report is null)throw new ArgumentNullException(nameof(report));if(!RedactionEnabled)_logger.LogWarning("RedactionEnabled=false requested; still redacting.");var redacted=_redaction.Redact(Normalize(report));await _queue.EnqueueAsync(redacted).ConfigureAwait(false);return redacted.Id;}
         public async Task<int> FlushQueueAsync()
         {
-            if(_deliveryRouter is null){_logger.LogWarning("BugReporter delivery router not configured.");return 0;}
             await _flushGate.WaitAsync().ConfigureAwait(false);
             try
             {
+                await _queue.PurgeExpiredAsync(_clock.UtcNow).ConfigureAwait(false);
+                if(_deliveryRouter is null){_logger.LogWarning("BugReporter delivery router not configured.");return 0;}
                 var delivered=0;
-                foreach(var report in await _queue.GetAllAsync().ConfigureAwait(false))
+                foreach(var report in await _queue.GetPendingAsync().ConfigureAwait(false))
                 {
                     var result=await _deliveryRouter.DeliverAsync(report).ConfigureAwait(false);
-                    if(result.Success){await _queue.RemoveAsync(report.Id).ConfigureAwait(false);delivered++;}
+                    await _queue.RecordDeliveryResultAsync(report.Id, _clock.UtcNow, result.Success).ConfigureAwait(false);
+                    if(result.Success)delivered++;
                 }
                 return delivered;
             }

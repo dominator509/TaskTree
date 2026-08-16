@@ -9,4 +9,5 @@
 - Compliance invariant: `ComplianceCore` idle-monitor start/replacement, disposal, and timer callback handling share a lifecycle gate; disposed instances reject restart and callbacks must stop before workstation locking.
 - Hotkey invariant: `HotkeyManager` serializes config reads, initialization, replacement, and disposal; if native replacement persistence fails, restore the prior binding before surfacing the failure.
 - Bug-report invariant: SMTP and GitHub delivery calls are bounded to 5 seconds; crash-hook subscription is idempotent at both the hook and reporter layers.
+- Bug-report queue invariant: encrypted retention metadata tracks pending/delivered state; flush retries pending reports only, successful reports purge after 7 days, failed reports purge after 30 days, and metadata survives queue-instance recreation.
 - Session/scheduler invariant: session lifecycle operations serialize through disposal, and `ReminderScheduler` loops own their `PeriodicTimer` reference rather than rereading a field that stop can clear.

@@ -59,7 +59,7 @@ namespace TaskTree.Modules.BugReporter.Tests
         }
 
         [TestMethod]
-        public async Task FlushQueueAsync_TrivialReport_FileDropsAndRemovesFromQueue()
+        public async Task FlushQueueAsync_TrivialReport_FileDropsAndRetainsForSevenDays()
         {
             var q = new BugReportQueue(new InMemorySecureStore());
             await q.EnqueueAsync(Report(BugSeverity.Trivial, new string('B',64), redacted:true));
@@ -67,7 +67,8 @@ namespace TaskTree.Modules.BugReporter.Tests
             var router = new DeliveryRouter(new EmailDeliveryAdapter(), new GitHubIssueAdapter(), new FileDropAdapter(Root()), new BugReportRateLimiter(), clock);
             var reporter = new BugReporter(q, new RedactionPipeline(Redactor().Object), new CrashCaptureHook(), clock, new NullLogger(), router);
             Assert.AreEqual(1, await reporter.FlushQueueAsync());
-            Assert.AreEqual(0, await q.CountAsync());
+            Assert.AreEqual(1, await q.CountAsync());
+            Assert.AreEqual(0, (await q.GetPendingAsync()).Count);
         }
 
         [TestMethod]
@@ -92,7 +93,8 @@ namespace TaskTree.Modules.BugReporter.Tests
             var reporter = new BugReporter(q, new RedactionPipeline(Redactor().Object), new CrashCaptureHook(), clock, new NullLogger(), router);
             var results = await Task.WhenAll(reporter.FlushQueueAsync(), reporter.FlushQueueAsync());
             Assert.AreEqual(1, results.Sum());
-            Assert.AreEqual(0, await q.CountAsync());
+            Assert.AreEqual(1, await q.CountAsync());
+            Assert.AreEqual(0, (await q.GetPendingAsync()).Count);
         }
 
         [TestMethod]
