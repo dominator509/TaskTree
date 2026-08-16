@@ -6,7 +6,7 @@
 ## Current Evidence
 
 - Release build: passed with 0 warnings and 0 errors.
-- Offline contract suite: 13 applicable assemblies, 414 passing non-live, non-performance tests, 0 failures, 0 skips. The last Live-inclusive baseline before this delta reports 415 passed and 1 intentionally skipped Live desktop-metrics test (416 total); the current Live-inclusive lane was not repeated. Performance tests run in a separate lane because their latency thresholds are timing-sensitive under parallel solution execution.
+- Offline contract suite: 13 applicable assemblies, 415 passing non-live, non-performance tests, 0 failures, 0 skips. The last Live-inclusive baseline before this delta reports 415 passed and 1 intentionally skipped Live desktop-metrics test (416 total); the current Live-inclusive lane was not repeated. Performance tests run in a separate lane because their latency thresholds are timing-sensitive under parallel solution execution.
 - Performance lane: 7 measurable Release cases passed in isolation; the separate Live desktop-metrics case remains intentionally excluded. Current measured ReminderScheduler 1,000-task tick is 0.2540 ms; 10 MB SecureStore save/load is 41.3432/47.8530 ms. 10k and 100k audit-chain checks passed.
 - Built-in SDK Code Coverage: the previous `--collect:"Code Coverage"` rerun passed 404 non-live, non-performance tests and produced a fresh ignored `TestResults/` artifact. The last fully converted production-source report remains 1,651/2,137 lines covered (77.26%); no repo-local Cobertura converter is checked in. Coverage was not rerun for this lifecycle-only delta.
 - Packaging preflight: `packaging/build-msix.ps1` now resolves the installed x64 Windows SDK tools and stages the manifest/assets layout, then fails before restore with the exact missing-assets gate because `packaging/Assets/` is absent.
@@ -46,7 +46,8 @@
 - Closed an audit identity gap without changing public contracts: the central audit writer now resolves empty actors to the current Windows user SID, and TaskEngine no longer records `Environment.UserName` in audit entries.
 - Closed a SessionLock integrity gap without changing public contracts: failed lock/unlock transition audits now restore the prior in-memory state so an unaudited state cannot suppress later observations or events.
 - Closed a hotkey compliance consistency gap without changing public contracts: failed hotkey configuration audits now restore the prior persisted/native binding or remove a newly created record, and no change event is published for an unaudited transition.
-- Post-v1.0.80 rerun: 414 non-live, non-performance tests passed; 7 performance tests passed; the Live-inclusive lane was not repeated after the additive test changes.
+- Closed an updater lifecycle consistency gap without changing public contracts: `ApplyAsync` now returns the shared state machine to `Idle` when a state-change observer throws after the state has already advanced.
+- Post-v1.0.81 rerun: 415 non-live, non-performance tests passed; 7 performance tests passed; the Live-inclusive lane was not repeated after the additive test changes.
 - Validation was local-only; no production secrets, signing keys, PHI source lists, or provider endpoints were used.
 
 ## Acceptance Blockers

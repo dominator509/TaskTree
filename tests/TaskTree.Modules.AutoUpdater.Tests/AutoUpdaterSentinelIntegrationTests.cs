@@ -54,11 +54,32 @@ public sealed class AutoUpdaterSentinelIntegrationTests
         Assert.AreEqual(TaskTree.Core.Enums.UpdaterState.Idle, updater.StateMachine.Current);
     }
 
-    private static AutoUpdater CreateUpdater(string root, SentinelService sentinel, Func<string, Task> installer) =>
+    [TestMethod, TestCategory("Offline")]
+    public async Task ApplyAsync_StateChangedObserverFailure_ResetsStateMachine()
+    {
+        var root = TempRoot();
+        var packagePath = Path.Combine(root, "TaskTree-1.0.1.msix");
+        var payload = Encoding.UTF8.GetBytes("abc");
+        await File.WriteAllBytesAsync(packagePath, payload);
+        var sentinel = new SentinelService(Path.Combine(root, "sentinel.lock"));
+        var machine = new UpdaterStateMachine(new FakeClock());
+        machine.StateChanged += (_, args) =>
+        {
+            if (args.Current == UpdaterState.Applied)
+                throw new InvalidOperationException("synthetic observer failure");
+        };
+        var updater = CreateUpdater(root, sentinel, _ => Task.CompletedTask, machine);
+
+        await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => updater.ApplyAsync(Manifest(payload)));
+
+        Assert.AreEqual(UpdaterState.Idle, machine.Current);
+    }
+
+    private static AutoUpdater CreateUpdater(string root, SentinelService sentinel, Func<string, Task> installer, UpdaterStateMachine? stateMachine = null) =>
         new(
             new ManifestSigner(TestPublicKeyBase64),
             new HashVerifier(),
-            new UpdaterStateMachine(new FakeClock()),
+            stateMachine ?? new UpdaterStateMachine(new FakeClock()),
             new StagingService(root, new HashVerifier()),
             new VersionEligibilityEvaluator(),
             null,

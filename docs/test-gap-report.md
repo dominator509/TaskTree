@@ -6,7 +6,7 @@
 ## Evidence
 
 - `rtk C:\Users\domin\.dotnet\dotnet.exe build TaskTree.sln -c Release --no-restore`: passed, 0 warnings, 0 errors.
-- `rtk C:\Users\domin\.dotnet\dotnet.exe test TaskTree.sln -c Release --no-build --filter "TestCategory!=Live&TestCategory!=Performance"`: passed, 13 applicable assemblies, 414 tests, 0 failures, 0 skips. The last Live-inclusive baseline before this delta was 416 total tests, with 415 passed and 1 intentionally skipped Live desktop-metrics test; the current Live-inclusive lane was not repeated.
+- `rtk C:\Users\domin\.dotnet\dotnet.exe test TaskTree.sln -c Release --no-build --filter "TestCategory!=Live&TestCategory!=Performance"`: passed, 13 applicable assemblies, 415 tests, 0 failures, 0 skips. The last Live-inclusive baseline before this delta was 416 total tests, with 415 passed and 1 intentionally skipped Live desktop-metrics test; the current Live-inclusive lane was not repeated.
 - `rtk C:\Users\domin\.dotnet\dotnet.exe test tests\TaskTree.Perf.Tests\TaskTree.Perf.Tests.csproj -c Release --no-build --filter "TestCategory=Performance&TestCategory!=Live"`: passed, 7 measurable performance tests, 0 failures, 0 skips.
 - Built-in SDK coverage: the previous `rtk C:\Users\domin\.dotnet\dotnet.exe test TaskTree.sln -c Release --no-build --filter "TestCategory!=Live&TestCategory!=Performance" --collect:"Code Coverage"` run passed 404 tests and produced a fresh `.coverage` artifact under ignored `TestResults/`. The last fully converted production-source report is 1,651/2,137 lines covered (77.26%); coverage was not rerun for this lifecycle-only delta.
 - `git diff --check`: passed.
@@ -27,6 +27,7 @@
 - New boundary tests cover updater apply-time downgrade/channel rejection, immutable PHI allowlist exposure, and serialized settings persistence/notification ordering.
 - New lifecycle/security tests cover defensive master-key copies and clean retry after SessionLock audit or ReminderScheduler startup-log failure.
 - New updater recovery tests cover sentinel retention on successful installation, cleanup on installer failure, first-launch marking, retry detection, and concrete DI registration.
+- Updater lifecycle coverage verifies that a throwing `StateChanged` observer cannot leave `ApplyAsync` in `Applied` or another non-idle state.
 - Orchestrator maintenance coverage verifies startup bug-report flushing and repeated updater polling with clean shutdown cancellation.
 - Crash capture coverage now verifies the manual crash hook returns only after the redacted report is durably queued, while the production path remains bounded to 200 ms.
 - Performance hardening coverage verifies the warmed scheduler path and UTF-8 byte-based SecureStore serialization remain below the documented thresholds.
@@ -37,7 +38,7 @@
 - ComplianceCore coverage verifies empty production audit actors resolve to the current Windows user SID; TaskEngine coverage remains green after removing its username fallback.
 - SessionLock coverage verifies an audited lock transition rolls back its in-memory state when persistence fails and can be retried successfully.
 - HotkeyManager coverage verifies failed audits restore the previous persisted configuration, suppress the change event, and remove a newly created record when no prior configuration exists.
-- Post-v1.0.80 rerun: 414 non-live, non-performance tests passed; 7 performance tests passed; the Live-inclusive lane was not repeated after the additive test changes.
+- Post-v1.0.81 rerun: 415 non-live, non-performance tests passed; 7 performance tests passed; the Live-inclusive lane was not repeated after the additive test changes.
 - Orchestrator lifecycle coverage verifies compliance auto-logoff subscription cleanup, and the scheduler loop test awaits its real reminder signal with a bounded timeout instead of relying on a fixed sleep.
 
 ## Remaining Gaps

@@ -126,10 +126,7 @@ namespace TaskTree.Modules.AutoUpdater
             }
             catch
             {
-                if (StateMachine.Current == UpdaterState.Checking || StateMachine.Current == UpdaterState.Downloading || StateMachine.Current == UpdaterState.Verifying || StateMachine.Current == UpdaterState.Staging || StateMachine.Current == UpdaterState.Applying)
-                    StateMachine.TransitionTo(UpdaterState.Failed);
-                if (StateMachine.Current == UpdaterState.Failed)
-                    StateMachine.Reset();
+                ResetStateAfterFailure();
                 throw;
             }
             finally
@@ -157,6 +154,30 @@ namespace TaskTree.Modules.AutoUpdater
         private bool IsEligibleForApplication(UpdateManifest manifest) =>
             manifest.Channel == Channel &&
             EligibilityEvaluator.IsEligible(manifest, GetCurrentVersion(), GetRolloutBucket());
+
+        private void ResetStateAfterFailure()
+        {
+            try
+            {
+                if (StateMachine.Current is UpdaterState.Checking or UpdaterState.Downloading or UpdaterState.Verifying or UpdaterState.Staging or UpdaterState.Applying)
+                    StateMachine.TransitionTo(UpdaterState.Failed);
+            }
+            catch
+            {
+                // StateChanged observers run after the state is assigned and can
+                // throw; the reset below must still get a chance to run.
+            }
+
+            try
+            {
+                if (StateMachine.Current != UpdaterState.Idle)
+                    StateMachine.Reset();
+            }
+            catch
+            {
+                // Reset likewise assigns Idle before notifying observers.
+            }
+        }
 
         private static string GetCurrentVersion()
         {

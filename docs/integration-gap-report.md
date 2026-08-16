@@ -14,6 +14,7 @@
 - Settings persistence, audit, and change notifications are serialized through the existing service boundary so overlapping UI operations cannot reorder the durable state and observer signal.
 - The application composition root registers the existing `HotkeyManager` singleton and injects it into `TrayHost`; the runtime path therefore loads `hotkeys/config` before registering the global binding.
 - `Orchestrator.StartAsync` now initializes the tray host, starts session locking, starts reminder scheduling and delivery, and starts the 15-minute compliance idle monitor.
+- Updater apply failure cleanup now returns the shared updater state machine to `Idle` even when a `StateChanged` observer throws after a state assignment.
 - Orchestrator startup now flushes the encrypted pending bug-report queue best-effort, and its owned 24-hour updater poll checks for manifests without auto-applying packages; updater poll shutdown is cancellation-aware and allows a bounded in-flight request to finish without blocking the rest of application teardown indefinitely.
 - Crash capture now synchronously commits the redacted crash report to the encrypted queue before the unhandled-exception callback returns, with a 200 ms bound and no provider dependency.
 - The declared Phase 2B/2E UI surface is now wired: settings is a reusable `SettingsView`, tasks render from the existing nested `TaskNode.Children` tree with priority colors and deadlines, and delete invokes the existing `ITaskEngine.DeleteAsync` contract.
