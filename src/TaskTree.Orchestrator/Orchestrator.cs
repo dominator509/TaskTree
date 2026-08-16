@@ -17,10 +17,10 @@ namespace TaskTree.Orchestrator
 {
     public sealed class Orchestrator : IOrchestrator, IDisposable
     {
-        private readonly ITaskEngine _taskEngine; private readonly IReminderScheduler _reminderScheduler; private readonly IComplianceCore _compliance; private readonly ITrayHost _trayHost; private readonly IReminderDeliveryService _reminderDeliveryService; private readonly ISettingsService _settingsService; private readonly ISessionLockService _sessionLock; private readonly IAppLogger _logger; private readonly IClock _clock;
-        private readonly SemaphoreSlim _gate = new(1,1); private EventHandler? _showTreeHandler,_addTaskHandler,_exitHandler; private EventHandler<SessionLockChangedEventArgs>? _sessionLockHandler; private bool _running,_disposed,_mainWindowHiddenBySessionLock; private MainWindow? _mainWindow; private MainWindowViewModel? _mainWindowViewModel;
-        public Orchestrator(ITaskEngine taskEngine, IReminderScheduler reminderScheduler, IComplianceCore compliance, ITrayHost trayHost, IReminderDeliveryService reminderDeliveryService, ISettingsService settingsService, ISessionLockService sessionLock, IAppLogger logger, IClock clock)
-        { _taskEngine=taskEngine??throw new ArgumentNullException(nameof(taskEngine)); _reminderScheduler=reminderScheduler??throw new ArgumentNullException(nameof(reminderScheduler)); _compliance=compliance??throw new ArgumentNullException(nameof(compliance)); _trayHost=trayHost??throw new ArgumentNullException(nameof(trayHost)); _reminderDeliveryService=reminderDeliveryService??throw new ArgumentNullException(nameof(reminderDeliveryService)); _settingsService=settingsService??throw new ArgumentNullException(nameof(settingsService)); _sessionLock=sessionLock??throw new ArgumentNullException(nameof(sessionLock)); _logger=logger??throw new ArgumentNullException(nameof(logger)); _clock=clock??throw new ArgumentNullException(nameof(clock)); }
+        private readonly ITaskEngine _taskEngine; private readonly IReminderScheduler _reminderScheduler; private readonly IComplianceCore _compliance; private readonly ITrayHost _trayHost; private readonly IReminderDeliveryService _reminderDeliveryService; private readonly ISettingsService _settingsService; private readonly ISessionLockService _sessionLock; private readonly IAppLogger _logger; private readonly IClock _clock; private readonly IAutoUpdater? _autoUpdater; private readonly IBugReporter? _bugReporter; private readonly TimeSpan _updatePollInterval;
+        private readonly SemaphoreSlim _gate = new(1,1); private EventHandler? _showTreeHandler,_addTaskHandler,_exitHandler; private EventHandler<SessionLockChangedEventArgs>? _sessionLockHandler; private bool _running,_disposed,_mainWindowHiddenBySessionLock; private MainWindow? _mainWindow; private MainWindowViewModel? _mainWindowViewModel; private CancellationTokenSource? _updatePollingCts; private Task? _updatePollingTask;
+        public Orchestrator(ITaskEngine taskEngine, IReminderScheduler reminderScheduler, IComplianceCore compliance, ITrayHost trayHost, IReminderDeliveryService reminderDeliveryService, ISettingsService settingsService, ISessionLockService sessionLock, IAppLogger logger, IClock clock, IAutoUpdater? autoUpdater = null, IBugReporter? bugReporter = null, TimeSpan? updatePollInterval = null)
+        { _taskEngine=taskEngine??throw new ArgumentNullException(nameof(taskEngine)); _reminderScheduler=reminderScheduler??throw new ArgumentNullException(nameof(reminderScheduler)); _compliance=compliance??throw new ArgumentNullException(nameof(compliance)); _trayHost=trayHost??throw new ArgumentNullException(nameof(trayHost)); _reminderDeliveryService=reminderDeliveryService??throw new ArgumentNullException(nameof(reminderDeliveryService)); _settingsService=settingsService??throw new ArgumentNullException(nameof(settingsService)); _sessionLock=sessionLock??throw new ArgumentNullException(nameof(sessionLock)); _logger=logger??throw new ArgumentNullException(nameof(logger)); _clock=clock??throw new ArgumentNullException(nameof(clock)); _autoUpdater=autoUpdater; _bugReporter=bugReporter; _updatePollInterval=updatePollInterval??TimeSpan.FromHours(24); if(_updatePollInterval<=TimeSpan.Zero)throw new ArgumentOutOfRangeException(nameof(updatePollInterval),"Update poll interval must be positive."); }
         public async Task StartAsync(CancellationToken ct)
         {
             ThrowIfDisposed();
@@ -36,6 +36,7 @@ namespace TaskTree.Orchestrator
                 startupBegan = true;
 
                 await VerifyAuditChainAtStartupAsync().ConfigureAwait(false);
+                await FlushBugReportQueueAtStartupAsync().ConfigureAwait(false);
 
                 _showTreeHandler = OnShowTreeRequested;
                 _addTaskHandler = (s, e) => _logger.LogInformation("AddTaskRequested");
@@ -70,6 +71,7 @@ namespace TaskTree.Orchestrator
                     Timestamp = _clock.UtcNow,
                 }).ConfigureAwait(false);
                 _running = true;
+                StartUpdatePolling();
             }
             catch
             {
@@ -95,6 +97,7 @@ namespace TaskTree.Orchestrator
                 _running = false;
 
                 var failures = new List<Exception>();
+                await StopUpdatePollingAsync(failures).ConfigureAwait(false);
                 UnsubscribeHandlers(failures);
                 CloseMainWindow();
                 await TryStopAsync("SessionLock", _sessionLock.StopAsync, failures).ConfigureAwait(false);
@@ -161,6 +164,82 @@ namespace TaskTree.Orchestrator
             catch (Exception ex)
             {
                 try { _logger.LogError(ex, "Unable to audit startup chain verification failure: {0}: {1}", ex.GetType().Name, ex.Message); } catch { }
+            }
+        }
+
+        private async Task FlushBugReportQueueAtStartupAsync()
+        {
+            if (_bugReporter is null) return;
+            try
+            {
+                await _bugReporter.FlushQueueAsync().ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                try { _logger.LogError(ex, "Bug-report queue flush failed at startup: {0}: {1}", ex.GetType().Name, ex.Message); } catch { }
+            }
+        }
+
+        private void StartUpdatePolling()
+        {
+            if (_autoUpdater is null || _updatePollingTask is not null) return;
+            _updatePollingCts = new CancellationTokenSource();
+            _updatePollingTask = UpdatePollingLoopAsync(_updatePollingCts.Token);
+        }
+
+        private async Task UpdatePollingLoopAsync(CancellationToken ct)
+        {
+            using var timer = new PeriodicTimer(_updatePollInterval);
+            try
+            {
+                while (await timer.WaitForNextTickAsync(ct).ConfigureAwait(false))
+                {
+                    try
+                    {
+                        var manifest = await _autoUpdater!.CheckAsync().ConfigureAwait(false);
+                        if (manifest is not null)
+                            _logger.LogInformation("TaskTree update available: {0}", manifest.Version);
+                    }
+                    catch (Exception ex)
+                    {
+                        try { _logger.LogError(ex, "Updater poll failed: {0}: {1}", ex.GetType().Name, ex.Message); } catch { }
+                    }
+                }
+            }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested) { }
+        }
+
+        private async Task StopUpdatePollingAsync(List<Exception> failures)
+        {
+            var cts = _updatePollingCts;
+            var task = _updatePollingTask;
+            if (cts is null || task is null) return;
+
+            cts.Cancel();
+            var completed = await Task.WhenAny(task, Task.Delay(TimeSpan.FromSeconds(4))).ConfigureAwait(false);
+            if (completed != task)
+            {
+                try { _logger.LogWarning("Updater poll did not stop within the shutdown budget; allowing its bounded request to finish."); } catch { }
+                _ = task.ContinueWith(t =>
+                {
+                    _ = t.Exception;
+                    cts.Dispose();
+                    if (ReferenceEquals(_updatePollingTask, t))
+                    {
+                        _updatePollingTask = null;
+                        _updatePollingCts = null;
+                    }
+                }, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+                return;
+            }
+
+            try { await task.ConfigureAwait(false); }
+            catch (Exception ex) { failures.Add(ex); }
+            finally
+            {
+                cts.Dispose();
+                _updatePollingTask = null;
+                _updatePollingCts = null;
             }
         }
 

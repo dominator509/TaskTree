@@ -55,6 +55,22 @@ namespace TaskTree.Orchestrator.Tests
         }
 
         [TestMethod, TestCategory("Offline")]
+        public async Task StartAsync_FlushesBugReportsAndPollsUpdater()
+        {
+            var h = Harness.Create();
+            var updater = new Mock<IAutoUpdater>(MockBehavior.Strict);
+            updater.Setup(x => x.CheckAsync()).ReturnsAsync((UpdateManifest?)null);
+            var orchestrator = h.Create(autoUpdater: updater.Object, bugReporter: h.BugReporter.Object, updatePollInterval: TimeSpan.FromMilliseconds(10));
+
+            await orchestrator.StartAsync(CancellationToken.None);
+            await Task.Delay(50);
+            await orchestrator.StopAsync();
+
+            h.BugReporter.Verify(x => x.FlushQueueAsync(), Times.Once);
+            updater.Verify(x => x.CheckAsync(), Times.AtLeastOnce);
+        }
+
+        [TestMethod, TestCategory("Offline")]
         public async Task StartAsync_CalledTwice_PreservesRunningLifecycle()
         {
             var h = Harness.Create();
@@ -184,6 +200,7 @@ namespace TaskTree.Orchestrator.Tests
                 Compliance = new Mock<IComplianceCore>(MockBehavior.Strict);
                 TrayHost = new Mock<ITrayHost>(MockBehavior.Strict);
                 ReminderDelivery = new Mock<IReminderDeliveryService>(MockBehavior.Strict);
+                BugReporter = new Mock<IBugReporter>(MockBehavior.Strict);
                 SettingsService = new Mock<ISettingsService>(MockBehavior.Strict);
                 SessionLock = new Mock<ISessionLockService>(MockBehavior.Strict);
                 Logger = new Mock<IAppLogger>(MockBehavior.Loose);
@@ -197,6 +214,7 @@ namespace TaskTree.Orchestrator.Tests
 
                 ReminderDelivery.Setup(x => x.StartAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
                 ReminderDelivery.Setup(x => x.StopAsync()).Returns(Task.CompletedTask);
+                BugReporter.Setup(x => x.FlushQueueAsync()).ReturnsAsync(0);
 
                 SessionLock.SetupGet(x => x.IsLocked).Returns(false);
                 SessionLock.SetupAdd(x => x.SessionLockChanged += It.IsAny<EventHandler<SessionLockChangedEventArgs>>()).Callback<EventHandler<SessionLockChangedEventArgs>>(_ => SessionLockSubscriptions++);
@@ -227,6 +245,7 @@ namespace TaskTree.Orchestrator.Tests
             public Mock<IComplianceCore> Compliance { get; }
             public Mock<ITrayHost> TrayHost { get; }
             public Mock<IReminderDeliveryService> ReminderDelivery { get; }
+            public Mock<IBugReporter> BugReporter { get; }
             public Mock<ISettingsService> SettingsService { get; }
             public Mock<ISessionLockService> SessionLock { get; }
             public Mock<IAppLogger> Logger { get; }
@@ -248,7 +267,10 @@ namespace TaskTree.Orchestrator.Tests
                 ISettingsService? settingsService = null,
                 ISessionLockService? sessionLock = null,
                 IAppLogger? logger = null,
-                IClock? clock = null)
+                IClock? clock = null,
+                IAutoUpdater? autoUpdater = null,
+                IBugReporter? bugReporter = null,
+                TimeSpan? updatePollInterval = null)
             {
                 return new Orchestrator(
                     taskEngine ?? TaskEngine.Object,
@@ -259,7 +281,10 @@ namespace TaskTree.Orchestrator.Tests
                     settingsService ?? SettingsService.Object,
                     sessionLock ?? SessionLock.Object,
                     logger ?? Logger.Object,
-                    clock ?? Clock);
+                    clock ?? Clock,
+                    autoUpdater,
+                    bugReporter,
+                    updatePollInterval);
             }
         }
     }

@@ -19,7 +19,7 @@ namespace TaskTree.Core.Abstractions
     /// <remarks>Phase 1F finalizes the 2-method surface. Architecture v1.0.2 amendment (Gap #63) formalizes §4 prose.</remarks>
     public interface IOrchestrator
     {
-        /// <summary>Starts: verifies chain integrity (§10.7), subscribes events, initializes TrayHost, starts ReminderScheduler, audits Startup.</summary>
+        /// <summary>Starts: verifies chain integrity (§10.7), flushes queued bug reports, subscribes events, initializes TrayHost, starts ReminderScheduler, audits Startup, and begins the configured updater poll lifecycle.</summary>
         Task StartAsync(CancellationToken ct);
 
         /// <summary>Stops in reverse: unsubscribes handlers, stops ReminderScheduler (5s bound per Gap #38), disposes TrayHost, audits Shutdown.</summary>

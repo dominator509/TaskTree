@@ -14,6 +14,7 @@
 - Settings persistence, audit, and change notifications are serialized through the existing service boundary so overlapping UI operations cannot reorder the durable state and observer signal.
 - The application composition root registers the existing `HotkeyManager` singleton and injects it into `TrayHost`; the runtime path therefore loads `hotkeys/config` before registering the global binding.
 - `Orchestrator.StartAsync` now initializes the tray host, starts session locking, starts reminder scheduling and delivery, and starts the 15-minute compliance idle monitor.
+- Orchestrator startup now flushes the encrypted pending bug-report queue best-effort, and its owned 24-hour updater poll checks for manifests without auto-applying packages; updater poll shutdown is cancellation-aware and allows a bounded in-flight request to finish without blocking the rest of application teardown indefinitely.
 - `ShowTreeRequested` creates and initializes the main WPF view model/window on the application dispatcher.
 - Scheduler-thread reminder delivery and session-lock callbacks now marshal Tier 2 WPF windows, main-window privacy hides, and tray balloons onto their owning WPF dispatcher.
 - Session-lock state transitions are serialized before audit completion and event publication, preserving transition order when lock/unlock observations overlap.
@@ -31,4 +32,4 @@
 - A real WPF application dispatcher, tray icon, hotkey message loop, task creation, persistence, reminder escalation, and window hide/show cycle were not executed in this headless validation session.
 - The offline tests do not prove end-to-end behavior against a real interactive Windows desktop profile.
 
-**Status:** Composition, updater launch-recovery wiring, and startup-chain failure handling are locally green; real-machine E2E acceptance remains open.
+**Status:** Composition, updater/bug-report maintenance wiring, launch-recovery wiring, and startup-chain failure handling are locally green; real-machine E2E acceptance remains open.

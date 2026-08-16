@@ -6,9 +6,9 @@
 ## Current Evidence
 
 - Release build: passed with 0 warnings and 0 errors.
-- Offline contract suite: 13 applicable assemblies, 401 passing non-live, non-performance tests, 0 failures, 0 skips. The full solution run reports 413 passed and 1 intentionally skipped Live desktop-metrics test (414 total). Performance tests run in a separate lane because their latency thresholds are timing-sensitive under parallel solution execution.
+- Offline contract suite: 13 applicable assemblies, 402 passing non-live, non-performance tests, 0 failures, 0 skips. The full solution run reports 414 passed and 1 intentionally skipped Live desktop-metrics test (415 total). Performance tests run in a separate lane because their latency thresholds are timing-sensitive under parallel solution execution.
 - Performance lane: 7 measurable Release cases passed in isolation; the separate Live desktop-metrics case remains intentionally excluded. 10k and 100k audit-chain checks passed; 10 MB SecureStore save/load measured 53.4829/65.6757 ms.
-- Built-in SDK Code Coverage: the current `--collect:"Code Coverage"` rerun passed 401 non-live, non-performance tests and produced a fresh ignored `TestResults/` artifact. The last fully converted production-source report remains 1,651/2,137 lines covered (77.26%); no repo-local Cobertura converter is checked in.
+- Built-in SDK Code Coverage: the current `--collect:"Code Coverage"` rerun passed 402 non-live, non-performance tests and produced a fresh ignored `TestResults/` artifact. The last fully converted production-source report remains 1,651/2,137 lines covered (77.26%); no repo-local Cobertura converter is checked in.
 - Packaging preflight: `packaging/build-msix.ps1` now resolves the installed x64 Windows SDK tools and stages the manifest/assets layout, then fails before restore with the exact missing-assets gate because `packaging/Assets/` is absent.
 - Production source contains no `NotImplementedException` executable stubs for the reviewed Phase 5E paths.
 - Removed the unreferenced reminder-delivery placeholder; DI and runtime tests continue to exercise the implemented `ReminderDeliveryService` router.
@@ -34,6 +34,7 @@
 - Closed a master-key cache exposure gap without changing interfaces: `MasterKeyManager` retains its DPAPI-unwrapped cache internally and returns defensive copies to callers.
 - Closed two partial-start lifecycle gaps without changing interfaces: SessionLock rolls back its timer/running state when startup audit fails, and ReminderScheduler cancels, disposes, and drains its loop when startup logging fails so both services can retry cleanly.
 - Closed the updater launch-recovery wiring gap without changing `IAutoUpdater`: apply now creates the pending sentinel around MSIX installation, app startup records and clears the first successful launch, and a surviving second attempt invokes the registered last-known-good rollback service before shutdown; focused tests cover successful-install retention, installer-failure cleanup, first-attempt marking, and retry detection.
+- Closed the remaining local maintenance-wiring gap without changing public interfaces: Orchestrator now flushes queued bug reports at startup and owns a cancellation-aware 24-hour updater poll, with a bounded shutdown wait for an in-flight provider request.
 - Validation was local-only; no production secrets, signing keys, PHI source lists, or provider endpoints were used.
 
 ## Acceptance Blockers
