@@ -21,7 +21,7 @@ namespace TaskTree.Modules.SecureStore.Tests;
 
 /// <summary>
 /// Offline tests for <see cref="SecureStore"/>: round-trip, tamper detection,
-/// delete, exists, slash sanitization, atomic write semantics, and
+/// delete, exists, slash/backslash sanitization, atomic write semantics, and
 /// missing-key null return. Uses real <see cref="AesGcmCryptoProvider"/> and
 /// a Moq-mocked <see cref="IMasterKeyManager"/> to avoid DPAPI dependency.
 /// </summary>
@@ -161,6 +161,20 @@ public sealed class SecureStoreTests
         var expected = Path.Combine(h.Paths.StorageDir, "synthetic__with__slash.bin");
         Assert.IsTrue(File.Exists(expected),
             $"Expected sanitized file '{expected}' but it was not created.");
+    }
+
+    /// <summary>Backslash traversal syntax is normalized into the storage directory.</summary>
+    [TestMethod]
+    public async Task SaveAsync_KeyWithBackslash_DoesNotEscapeStorageDirectory()
+    {
+        var h = CreateStore();
+        using var __ = h.Paths;
+
+        await h.Store.SaveAsync(@"synthetic\..\escape", new SamplePayload());
+
+        var expected = Path.Combine(h.Paths.StorageDir, "synthetic__..__escape.bin");
+        Assert.IsTrue(File.Exists(expected));
+        Assert.IsFalse(File.Exists(Path.Combine(h.Paths.StorageDir, "escape.bin")));
     }
 
     /// <summary>Derivation 2: Atomic-write contract — the temp file does not remain after SaveAsync.</summary>

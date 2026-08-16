@@ -86,9 +86,16 @@ public sealed class SecureStore : ISecureStore
     private static string SanitizeKey(string key)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(key);
-        // Only '/' is documented in known keys (e.g. "tasks/tree"); replace to
-        // keep a single-segment filename. Other characters pass through.
-        return key.Replace("/", SlashReplacement, StringComparison.Ordinal);
+        // Known keys use '/' as a logical separator. Normalize both Windows
+        // separator forms before validating the resulting single-segment name.
+        var sanitized = key
+            .Replace("/", SlashReplacement, StringComparison.Ordinal)
+            .Replace("\\", SlashReplacement, StringComparison.Ordinal);
+
+        if (sanitized.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
+            throw new ArgumentException("Storage key contains invalid filename characters.", nameof(key));
+
+        return sanitized;
     }
 
     private string FilePathFor(string key) =>

@@ -32,7 +32,8 @@ namespace TaskTree.Core.Security;
 /// declare a C# surface. This primitive exposes:
 /// (1) <see cref="ComputeHash"/> — pure SHA-256 over
 ///     UTF-8(prevHash) ‖ UTF-8(canonicalJson(entry without Hash));
-/// (2) <see cref="VerifyChain"/> — iterates the list and confirms every link;
+/// (2) <see cref="VerifyChain"/> — iterates the list, confirms every link,
+///     and enforces the writer-assigned 1..N sequence invariant;
 /// (3) <see cref="GenesisPrevHash"/> = empty string — the very first entry
 ///     has no predecessor; the empty-string sentinel keeps the SHA-256 input
 ///     deterministic and any hex-decoder unambiguous (no hex string ever
@@ -98,9 +99,13 @@ public static class HashChain
         if (entries.Count == 0) return true;
 
         string expectedPrev = GenesisPrevHash;
+        long expectedSeq = 1L;
         for (int i = 0; i < entries.Count; i++)
         {
             var e = entries[i];
+            if (e.Seq != expectedSeq++)
+                return false;
+
             if (!string.Equals(e.PrevHash, expectedPrev, StringComparison.Ordinal))
                 return false;
 

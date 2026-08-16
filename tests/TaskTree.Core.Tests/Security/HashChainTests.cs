@@ -71,4 +71,17 @@ public sealed class HashChainTests
         entry2.Action = "TamperedAction";   // mutate AFTER hashing
         Assert.IsFalse(HashChain.VerifyChain(entries));
     }
+
+    /// <summary>VerifyChain rejects a cryptographically linked chain with a broken writer sequence.</summary>
+    [TestMethod]
+    public void VerifyChain_NonMonotonicSequence_ReturnsFalse()
+    {
+        var entry1 = MakeEntry(1, HashChain.GenesisPrevHash, "FirstAction");
+        entry1.Hash = HashChain.ComputeHash(entry1.PrevHash, entry1);
+
+        var entry3 = MakeEntry(3, entry1.Hash, "ThirdAction");
+        entry3.Hash = HashChain.ComputeHash(entry3.PrevHash, entry3);
+
+        Assert.IsFalse(HashChain.VerifyChain(new List<AuditEntry> { entry1, entry3 }));
+    }
 }
