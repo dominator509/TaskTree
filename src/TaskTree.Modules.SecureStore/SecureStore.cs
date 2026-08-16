@@ -10,7 +10,6 @@
 // ─────────────────────────────────────────────────────────────────────────────
 using System;
 using System.IO;
-using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -116,8 +115,7 @@ public sealed class SecureStore : ISecureStore
             var masterKey = await _keyManager.GetOrCreateMasterKeyAsync().ConfigureAwait(false);
             // Decrypt throws CryptographicException on tag mismatch per §10.7.
             var plaintext = _crypto.Decrypt(blob, masterKey);
-            var json = Encoding.UTF8.GetString(plaintext);
-            return JsonSerializer.Deserialize<T>(json);
+            return JsonSerializer.Deserialize<T>(plaintext);
         }
         finally
         {
@@ -135,8 +133,7 @@ public sealed class SecureStore : ISecureStore
         await _gate.WaitAsync().ConfigureAwait(false);
         try
         {
-            var json = JsonSerializer.Serialize(value);
-            var plaintext = Encoding.UTF8.GetBytes(json);
+            var plaintext = JsonSerializer.SerializeToUtf8Bytes(value);
             var masterKey = await _keyManager.GetOrCreateMasterKeyAsync().ConfigureAwait(false);
             var blob = _crypto.Encrypt(plaintext, masterKey);
 

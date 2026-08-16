@@ -16,6 +16,7 @@ namespace TaskTree.Modules.BugReporter
 {
     public sealed class BugReporter : IBugReporter
     {
+        private static readonly TimeSpan CrashCaptureCommitTimeout = TimeSpan.FromMilliseconds(200);
         private readonly BugReportQueue _queue; private readonly RedactionPipeline _redaction; private readonly CrashCaptureHook _crashHook; private readonly IClock _clock; private readonly IAppLogger _logger; private readonly DeliveryRouter? _deliveryRouter; private readonly SemaphoreSlim _flushGate = new(1, 1); private readonly object _crashHookGate = new(); private bool _crashHookSubscribed;
         public BugReporter(BugReportQueue queue, RedactionPipeline redaction, CrashCaptureHook crashHook, IClock clock, IAppLogger logger, DeliveryRouter? deliveryRouter=null)
         { _queue=queue??throw new ArgumentNullException(nameof(queue)); _redaction=redaction??throw new ArgumentNullException(nameof(redaction)); _crashHook=crashHook??throw new ArgumentNullException(nameof(crashHook)); _clock=clock??throw new ArgumentNullException(nameof(clock)); _logger=logger??throw new ArgumentNullException(nameof(logger)); _deliveryRouter=deliveryRouter; }
@@ -40,7 +41,27 @@ namespace TaskTree.Modules.BugReporter
             finally { _flushGate.Release(); }
         }
         public void HookGlobalCrashHandler(){lock(_crashHookGate){if(_crashHookSubscribed)return;_crashHook.CrashCaptured+=OnCrashCaptured;_crashHookSubscribed=true;_crashHook.HookGlobalCrashHandler();}}
-        private async void OnCrashCaptured(object? sender, Exception ex){try{await SubmitAsync(new BugReport(Guid.NewGuid(),_clock.UtcNow,BugReportType.Crash,BugSeverity.High,ex.GetType().Name,new BugReportDescription("Application should not crash.",ex.ToString()),new BugReportEnvironment(Environment.OSVersion.VersionString,"unknown","unknown",UpdateChannel.Stable),Guid.NewGuid(),string.Empty,Array.Empty<BugReportAttachment>(),false)).ConfigureAwait(false);}catch(Exception captureEx){_logger.LogError(captureEx,"Crash capture queue failed: {0}: {1}",captureEx.GetType().Name,captureEx.Message);}}
+        private void OnCrashCaptured(object? sender, Exception ex)
+        {
+            try
+            {
+                // An unhandled exception normally terminates the process after
+                // this event returns. Complete the encrypted queue write before
+                // returning, but keep the crash path bounded.
+                var capture = SubmitAsync(new BugReport(Guid.NewGuid(), _clock.UtcNow, BugReportType.Crash, BugSeverity.High, ex.GetType().Name, new BugReportDescription("Application should not crash.", ex.ToString()), new BugReportEnvironment(Environment.OSVersion.VersionString, "unknown", "unknown", UpdateChannel.Stable), Guid.NewGuid(), string.Empty, Array.Empty<BugReportAttachment>(), false));
+                if (!capture.Wait(CrashCaptureCommitTimeout))
+                {
+                    _logger.LogWarning("Crash capture queue persistence exceeded {0} ms.", CrashCaptureCommitTimeout.TotalMilliseconds);
+                    return;
+                }
+
+                capture.GetAwaiter().GetResult();
+            }
+            catch (Exception captureEx)
+            {
+                _logger.LogError(captureEx, "Crash capture queue failed: {0}: {1}", captureEx.GetType().Name, captureEx.Message);
+            }
+        }
         private BugReport Normalize(BugReport report){var desc=report.Description??new BugReportDescription(string.Empty,string.Empty);var env=report.Environment??new BugReportEnvironment(string.Empty,string.Empty,string.Empty,UpdateChannel.Stable);var fp=IsHex64(report.Fingerprint)?report.Fingerprint.ToUpperInvariant():ComputeFingerprint(report.Type,report.Severity,report.Title??string.Empty,desc.Actual??string.Empty);return report with{Id=report.Id==Guid.Empty?Guid.NewGuid():report.Id,Timestamp=report.Timestamp==default?_clock.UtcNow:report.Timestamp,CorrelationId=report.CorrelationId==Guid.Empty?Guid.NewGuid():report.CorrelationId,Description=desc,Environment=env,Attachments=report.Attachments??Array.Empty<BugReportAttachment>(),Fingerprint=fp};}
         internal static string ComputeFingerprint(BugReportType type,BugSeverity severity,string title,string actual)=>Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes($"{type}|{severity}|{title}|{actual}")));
         private static bool IsHex64(string? value){if(string.IsNullOrWhiteSpace(value)||value.Length!=64)return false;foreach(var c in value){var ok=(c>='0'&&c<='9')||(c>='a'&&c<='f')||(c>='A'&&c<='F');if(!ok)return false;}return true;}

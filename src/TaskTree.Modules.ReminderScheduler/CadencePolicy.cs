@@ -40,10 +40,10 @@ namespace TaskTree.Modules.ReminderScheduler
             if (node is null) return false;
 
             var priority = node.Priority;
-            var repeat = GetRepeatCadence(priority);
 
             if (!node.Deadline.HasValue)
             {
+                var repeat = GetRepeatCadence(priority);
                 if (priority != Priority.Critical) return false;
                 if (lastFiredUtc is null) { reason = ReminderReason.Initial; return true; }
                 if ((nowUtc - lastFiredUtc.Value) >= repeat) { reason = ReminderReason.Repeat; return true; }
@@ -54,12 +54,13 @@ namespace TaskTree.Modules.ReminderScheduler
 
             if (deadline <= nowUtc)
             {
+                var repeat = GetRepeatCadence(priority);
                 if (lastFiredUtc is null || (nowUtc - lastFiredUtc.Value) >= repeat)
                 { reason = ReminderReason.Overdue; return true; }
                 return false;
             }
 
-            if (lastFiredUtc.HasValue && (nowUtc - lastFiredUtc.Value) >= repeat)
+            if (lastFiredUtc.HasValue && (nowUtc - lastFiredUtc.Value) >= GetRepeatCadence(priority))
             { reason = ReminderReason.Repeat; return true; }
 
             if (lastFiredUtc is null)
@@ -74,7 +75,7 @@ namespace TaskTree.Modules.ReminderScheduler
                         var offset = GetInitialOffsetBeforeDeadline(priority);
                         if ((deadline - nowUtc) <= offset) { reason = ReminderReason.Initial; return true; }
                         return false;
-                    default: return false;
+                    default: throw new ArgumentOutOfRangeException(nameof(node.Priority), priority, "Unknown priority.");
                 }
             }
             return false;

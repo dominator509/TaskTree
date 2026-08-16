@@ -22,14 +22,14 @@ Phase 4B now contains module-backed MSTest/Stopwatch measurements for TaskEngine
 |---|---:|---|---|---|
 | Tray click -> GUI visible warm | < 200 ms | None in chat; live WPF/tray required | Requires Phase 5E/5F | #311 |
 | Tray click -> event raised | < 50 ms | None in chat; live tray/event required | Requires Phase 5E/5F | #311 |
-| TaskEngine CRUD | < 50 ms | `TaskEngine_AddUpdateDelete_SmokeUnderTarget`: 0.3075 ms average | Passed local Release measurement | #305 closed locally |
-| Full tree fetch <=1000 nodes | < 100 ms | `TaskEngine_Fetch1000Nodes_SmokeUnderTarget`: 0.3593 ms | Passed local Release measurement | #306 closed locally |
-| ReminderScheduler tick eval | < 10 ms | `ReminderScheduler_TickEvaluation1000Tasks_SmokeUnderTarget`: 4.5148 ms | Passed local Release measurement | #307 closed locally |
-| SecureStore read/write <=10 MB | < 100 ms each | 10 MB save: 53.4829 ms; load: 65.6757 ms | Passed local Release measurement | #308 closed locally |
-| Audit write | < 20 ms | `Audit_Write1000_AverageUnder20Ms_Smoke`: 0.0229 ms average | Passed local Release measurement | #295 partial |
+| TaskEngine CRUD | < 50 ms | `TaskEngine_AddUpdateDelete_SmokeUnderTarget`: 0.4649 ms average | Passed local Release measurement | #305 closed locally |
+| Full tree fetch <=1000 nodes | < 100 ms | `TaskEngine_Fetch1000Nodes_SmokeUnderTarget`: 0.4792 ms | Passed local Release measurement | #306 closed locally |
+| ReminderScheduler tick eval | < 10 ms | `ReminderScheduler_TickEvaluation1000Tasks_SmokeUnderTarget`: 0.1596 ms after benchmark warmup | Passed local Release measurement | #307 closed locally |
+| SecureStore read/write <=10 MB | < 100 ms each | 10 MB save: 47.3427 ms; load: 47.9444 ms | Passed local Release measurement | #308 closed locally |
+| Audit write | < 20 ms | `Audit_Write1000_AverageUnder20Ms_Smoke`: 0.0321 ms average | Passed local Release measurement | #295 partial |
 | Audit-chain verify 10k | < 500 ms | `AuditChain_Append10000_VerifyIntegrity_UnderTarget`: 107 ms | Passed local Release measurement | #295/#296 partial |
 | Updater manifest check | < 2 s network | No live HTTP in chat | Requires Phase 5E live HTTP | #309 |
-| Bug submit queued | < 50 ms | `BugReporter_SubmitQueued_SmokeUnderTarget`: 2.2137 ms average | Passed local Release measurement | #310 closed locally |
+| Bug submit queued | < 50 ms | `BugReporter_SubmitQueued_SmokeUnderTarget`: 3.2913 ms average | Passed local Release measurement | #310 closed locally |
 | Idle RAM | < 80 MB | No chat measurement | Requires installed app | #302 |
 | CPU at idle | < 0.5% | No chat measurement | Requires installed app | #302 |
 
@@ -46,7 +46,7 @@ dotnet test tests/TaskTree.Modules.ComplianceCore.Tests/TaskTree.Modules.Complia
 
 dotnet test TaskTree.sln -c Release --no-build --filter TestCategory=Stress
   100k append+verify: 1370 ms, passed
-  10 MB SecureStore save: 53.4829 ms; load: 65.6757 ms, passed
+  10 MB SecureStore save: 51.2640 ms; load: 61.8809 ms, passed
 ```
 
 The benchmark tests use the real module implementations with deterministic, non-PHI test doubles and interface-backed snapshots where the target is specifically an isolated evaluation loop. They do not claim installed-app behavior.
@@ -67,7 +67,7 @@ The local Release evidence runs `Performance` and `Stress`; `Live` remains a rel
 
 ## 7. Tuning Patch Policy
 
-No speculative production tuning patches were emitted. The module-backed measurements pass their local thresholds, so remaining tuning belongs after installed-app evidence rather than before it.
+The current pass includes two evidence-driven, contract-preserving hot-path changes: reminder cadence evaluation avoids repeat-cadence work for first-time future tasks, and SecureStore serializes JSON directly to/from UTF-8 bytes to remove a large-payload string copy. The benchmark now warms the first scheduler call so the threshold measures steady-state evaluation. Installed-app and live integration tuning remains environment-gated.
 
 ## 8. Remaining Phase 4B/5F Gaps
 
@@ -87,7 +87,7 @@ No speculative production tuning patches were emitted. The module-backed measure
 | #311 | Tray/UI latency targets require live WPF/tray validation | Phase 5E/5F |
 | #312 | Phase 5F must enforce final performance thresholds with release-candidate evidence | Phase 5F |
 | #313 | Define Performance/Stress/Live category execution policy | Phase 5C/5F |
-| #314 | Tuning patches deferred until measured evidence exists | Phase 5B/5C/5F |
+| #314 | Evidence-driven local tuning is now applied for the measured scheduler and SecureStore paths; retain final RC check | Phase 5F |
 
 ## 9. Codex/Claude Action Plan
 

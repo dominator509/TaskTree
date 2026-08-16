@@ -114,7 +114,6 @@ namespace TaskTree.Modules.BugReporter.Tests
             var reporter = new BugReporter(q, new RedactionPipeline(Redactor().Object), hook, new FakeClock(T), new NullLogger());
             reporter.HookGlobalCrashHandler();
             hook.RaiseForTests(new InvalidOperationException("SECRET crash"));
-            await Task.Delay(50);
             Assert.AreEqual(1, await q.CountAsync());
             Assert.IsTrue((await q.GetAllAsync())[0].Redacted);
         }

@@ -139,7 +139,7 @@ A comprehensive flat-merge consolidation of HANDOFF.md v1.0.0 through v1.0.14 wi
 
 ---
 
-## Current Verified State (additive v1.0.70)
+## Current Verified State (additive v1.0.73)
 
 This section records the current checkout without deleting the historical v1.0.14 delta above. It supersedes the historical Phase 1D next-action block for current execution; `Roadmap.md`, `Architecture.md`, and the owner gates remain authoritative.
 
@@ -179,3 +179,6 @@ This section records the current checkout without deleting the historical v1.0.1
 | 1.0.68 | 2026-08-16 | Master-key defensive copies, SessionLock startup rollback, ReminderScheduler startup cleanup, focused regressions, and refreshed 398/411-test evidence recorded. |
 | 1.0.69 | 2026-08-16 | Updater apply now wires the atomic first-launch sentinel, app startup distinguishes first attempt from a surviving crash marker, DI registers rollback recovery, and focused 401/413-test evidence is refreshed. See `docs/HANDOFF-v1.0.69-delta.md`. |
 | 1.0.70 | 2026-08-16 | Orchestrator now owns startup bug-report queue flushing and a bounded updater poll lifecycle; refreshed 402/415-test evidence recorded. See `docs/HANDOFF-v1.0.70-delta.md`. |
+| 1.0.71 | 2026-08-16 | Unhandled-exception crash capture now commits the redacted report synchronously to the encrypted queue within a bounded 200 ms callback; focused BugReporter evidence refreshed. See `docs/HANDOFF-v1.0.71-delta.md`. |
+| 1.0.72 | 2026-08-16 | Evidence-driven scheduler and SecureStore hot-path tuning restores the documented local performance thresholds; current measurements are recorded in `docs/perf-report.md`. See `docs/HANDOFF-v1.0.72-delta.md`. |
+| 1.0.73 | 2026-08-16 | Background updater and scheduler tests now await their real synchronization points instead of fixed sleeps; refreshed full-suite evidence is green. See `docs/HANDOFF-v1.0.73-delta.md`. |

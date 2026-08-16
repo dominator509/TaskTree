@@ -10,7 +10,7 @@
 - `rtk C:\Users\domin\.dotnet\dotnet.exe test tests\TaskTree.Perf.Tests\TaskTree.Perf.Tests.csproj -c Release --no-build --filter "TestCategory=Performance&TestCategory!=Live"`: passed, 7 measurable performance tests, 0 failures, 0 skips.
 - Built-in SDK coverage: `rtk C:\Users\domin\.dotnet\dotnet.exe test TaskTree.sln -c Release --no-build --no-restore --filter "TestCategory!=Live&TestCategory!=Performance" --collect:"Code Coverage"`: passed 402 tests and produced a fresh `.coverage` artifact under ignored `TestResults/`. The last fully converted production-source report is 1,651/2,137 lines covered (77.26%); no repo-local Cobertura converter is checked in.
 - `git diff --check`: passed.
-- Release Performance category: 7 module-backed tests passed, 1 Live desktop metrics test skipped by design. Captured timings include TaskEngine CRUD 0.3075 ms average, 1000-node fetch 0.3593 ms, ReminderScheduler 1000-task tick 4.5148 ms, SecureStore 10 MB save/load 53.4829/65.6757 ms, AuditChainWriter append 0.0229 ms average, and BugReporter submit+queue 2.2137 ms average.
+- Release Performance category: 7 module-backed tests passed, 1 Live desktop metrics test skipped by design. Current captured timings include TaskEngine CRUD 0.4649 ms average, 1000-node fetch 0.4792 ms, ReminderScheduler 1000-task tick 0.1596 ms after warmup, SecureStore 10 MB save/load 47.3427/47.9444 ms, AuditChainWriter append 0.0270 ms average, and BugReporter submit+queue 3.2913 ms average.
 - Release Stress category: 100k audit-chain append+verify passed in 1370 ms; the 10 MB SecureStore save/load case passed with 53.4829/65.6757 ms.
 - Dedicated 10k audit-chain verification passed in 107 ms.
 - Live/provider tests were intentionally excluded and were not represented as green.
@@ -28,6 +28,9 @@
 - New lifecycle/security tests cover defensive master-key copies and clean retry after SessionLock audit or ReminderScheduler startup-log failure.
 - New updater recovery tests cover sentinel retention on successful installation, cleanup on installer failure, first-launch marking, retry detection, and concrete DI registration.
 - Orchestrator maintenance coverage verifies startup bug-report flushing and repeated updater polling with clean shutdown cancellation.
+- Crash capture coverage now verifies the manual crash hook returns only after the redacted report is durably queued, while the production path remains bounded to 200 ms.
+- Performance hardening coverage verifies the warmed scheduler path and UTF-8 byte-based SecureStore serialization remain below the documented thresholds.
+- Background lifecycle coverage now awaits updater-poll and in-flight scheduler synchronization points, removing fixed-sleep test races under loaded parallel execution.
 
 ## Remaining Gaps
 

@@ -58,12 +58,18 @@ namespace TaskTree.Orchestrator.Tests
         public async Task StartAsync_FlushesBugReportsAndPollsUpdater()
         {
             var h = Harness.Create();
+            var pollObserved = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
             var updater = new Mock<IAutoUpdater>(MockBehavior.Strict);
-            updater.Setup(x => x.CheckAsync()).ReturnsAsync((UpdateManifest?)null);
+            updater
+                .Setup(x => x.CheckAsync())
+                .Callback(() => pollObserved.TrySetResult(true))
+                .ReturnsAsync((UpdateManifest?)null);
             var orchestrator = h.Create(autoUpdater: updater.Object, bugReporter: h.BugReporter.Object, updatePollInterval: TimeSpan.FromMilliseconds(10));
 
             await orchestrator.StartAsync(CancellationToken.None);
-            await Task.Delay(50);
+            Assert.AreSame(
+                pollObserved.Task,
+                await Task.WhenAny(pollObserved.Task, Task.Delay(TimeSpan.FromSeconds(2))));
             await orchestrator.StopAsync();
 
             h.BugReporter.Verify(x => x.FlushQueueAsync(), Times.Once);

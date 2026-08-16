@@ -206,9 +206,11 @@ namespace TaskTree.Modules.ReminderScheduler.Tests
             var node = MakeNode(Priority.Critical, deadline: null);
             var tree = new List<TaskNode> { node };
             var clock = new FakeClock(new DateTimeOffset(2026, 6, 1, 12, 0, 0, TimeSpan.Zero));
+            var tickStarted = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
             var engine = new Mock<ITaskEngine>(MockBehavior.Strict);
             engine.Setup(e => e.GetTreeAsync()).Returns(async () =>
             {
+                tickStarted.TrySetResult(true);
                 await Task.Delay(2000);
                 return (IReadOnlyList<TaskNode>)tree;
             });
@@ -223,7 +225,9 @@ namespace TaskTree.Modules.ReminderScheduler.Tests
             {
                 s.Cadence = TimeSpan.FromSeconds(1);
                 await s.StartAsync(CancellationToken.None);
-                await Task.Delay(1100);
+                Assert.AreSame(
+                    tickStarted.Task,
+                    await Task.WhenAny(tickStarted.Task, Task.Delay(TimeSpan.FromSeconds(3))));
                 var sw = Stopwatch.StartNew();
                 await s.StopAsync();
                 sw.Stop();

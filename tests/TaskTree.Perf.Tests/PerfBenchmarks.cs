@@ -93,6 +93,9 @@ namespace TaskTree.Perf.Tests
             using var scheduler = new ReminderScheduler(clock, taskEngine.Object, compliance, CreateLogger());
             var fired = 0;
             scheduler.ReminderDue += (_, _) => fired++;
+            // Warm the first-call JIT path so the threshold measures steady-state
+            // task evaluation, matching the explicit warmup used by storage cases.
+            await scheduler.TickOnceAsync(CancellationToken.None);
             var sw = Stopwatch.StartNew();
             await scheduler.TickOnceAsync(CancellationToken.None);
             sw.Stop();
