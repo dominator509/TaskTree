@@ -22,14 +22,14 @@ Phase 4B now contains module-backed MSTest/Stopwatch measurements for TaskEngine
 |---|---:|---|---|---|
 | Tray click -> GUI visible warm | < 200 ms | None in chat; live WPF/tray required | Requires Phase 5E/5F | #311 |
 | Tray click -> event raised | < 50 ms | None in chat; live tray/event required | Requires Phase 5E/5F | #311 |
-| TaskEngine CRUD | < 50 ms | `TaskEngine_AddUpdateDelete_SmokeUnderTarget`: 0.4649 ms average | Passed local Release measurement | #305 closed locally |
-| Full tree fetch <=1000 nodes | < 100 ms | `TaskEngine_Fetch1000Nodes_SmokeUnderTarget`: 0.4792 ms | Passed local Release measurement | #306 closed locally |
-| ReminderScheduler tick eval | < 10 ms | `ReminderScheduler_TickEvaluation1000Tasks_SmokeUnderTarget`: 0.1596 ms after benchmark warmup | Passed local Release measurement | #307 closed locally |
-| SecureStore read/write <=10 MB | < 100 ms each | 10 MB save: 47.3427 ms; load: 47.9444 ms | Passed local Release measurement | #308 closed locally |
-| Audit write | < 20 ms | `Audit_Write1000_AverageUnder20Ms_Smoke`: 0.0321 ms average | Passed local Release measurement | #295 partial |
+| TaskEngine CRUD | < 50 ms | `TaskEngine_AddUpdateDelete_SmokeUnderTarget`: 0.3995 ms average | Passed local Release measurement | #305 closed locally |
+| Full tree fetch <=1000 nodes | < 100 ms | `TaskEngine_Fetch1000Nodes_SmokeUnderTarget`: 0.4345 ms | Passed local Release measurement | #306 closed locally |
+| ReminderScheduler tick eval | < 10 ms | `ReminderScheduler_TickEvaluation1000Tasks_SmokeUnderTarget`: 0.2540 ms after benchmark warmup | Passed local Release measurement | #307 closed locally |
+| SecureStore read/write <=10 MB | < 100 ms each | 10 MB save: 41.3432 ms; load: 47.8530 ms | Passed local Release measurement | #308 closed locally |
+| Audit write | < 20 ms | `Audit_Write1000_AverageUnder20Ms_Smoke`: 0.0230 ms average | Passed local Release measurement | #295 partial |
 | Audit-chain verify 10k | < 500 ms | `AuditChain_Append10000_VerifyIntegrity_UnderTarget`: 107 ms | Passed local Release measurement | #295/#296 partial |
 | Updater manifest check | < 2 s network | No live HTTP in chat | Requires Phase 5E live HTTP | #309 |
-| Bug submit queued | < 50 ms | `BugReporter_SubmitQueued_SmokeUnderTarget`: 3.2913 ms average | Passed local Release measurement | #310 closed locally |
+| Bug submit queued | < 50 ms | `BugReporter_SubmitQueued_SmokeUnderTarget`: 2.7860 ms average | Passed local Release measurement | #310 closed locally |
 | Idle RAM | < 80 MB | No chat measurement | Requires installed app | #302 |
 | CPU at idle | < 0.5% | No chat measurement | Requires installed app | #302 |
 

@@ -6,11 +6,11 @@
 ## Evidence
 
 - `rtk C:\Users\domin\.dotnet\dotnet.exe build TaskTree.sln -c Release --no-restore`: passed, 0 warnings, 0 errors.
-- `rtk C:\Users\domin\.dotnet\dotnet.exe test TaskTree.sln -c Release --no-build --no-restore --filter "TestCategory!=Live&TestCategory!=Performance"`: passed, 13 applicable assemblies, 402 tests, 0 failures, 0 skips. The full solution run was 415 total tests, with 414 passed and 1 intentionally skipped Live desktop-metrics test.
+- `rtk C:\Users\domin\.dotnet\dotnet.exe test TaskTree.sln -c Release --no-build --filter "TestCategory!=Live&TestCategory!=Performance"`: passed, 13 applicable assemblies, 404 tests, 0 failures, 0 skips. The full solution run was 416 total tests, with 415 passed and 1 intentionally skipped Live desktop-metrics test.
 - `rtk C:\Users\domin\.dotnet\dotnet.exe test tests\TaskTree.Perf.Tests\TaskTree.Perf.Tests.csproj -c Release --no-build --filter "TestCategory=Performance&TestCategory!=Live"`: passed, 7 measurable performance tests, 0 failures, 0 skips.
-- Built-in SDK coverage: `rtk C:\Users\domin\.dotnet\dotnet.exe test TaskTree.sln -c Release --no-build --no-restore --filter "TestCategory!=Live&TestCategory!=Performance" --collect:"Code Coverage"`: passed 402 tests and produced a fresh `.coverage` artifact under ignored `TestResults/`. The last fully converted production-source report is 1,651/2,137 lines covered (77.26%); no repo-local Cobertura converter is checked in.
+- Built-in SDK coverage: `rtk C:\Users\domin\.dotnet\dotnet.exe test TaskTree.sln -c Release --no-build --filter "TestCategory!=Live&TestCategory!=Performance" --collect:"Code Coverage"`: passed 404 tests and produced a fresh `.coverage` artifact under ignored `TestResults/`. The last fully converted production-source report is 1,651/2,137 lines covered (77.26%); no repo-local Cobertura converter is checked in.
 - `git diff --check`: passed.
-- Release Performance category: 7 module-backed tests passed, 1 Live desktop metrics test skipped by design. Current captured timings include TaskEngine CRUD 0.4649 ms average, 1000-node fetch 0.4792 ms, ReminderScheduler 1000-task tick 0.1596 ms after warmup, SecureStore 10 MB save/load 47.3427/47.9444 ms, AuditChainWriter append 0.0270 ms average, and BugReporter submit+queue 3.2913 ms average.
+- Release Performance category: 7 module-backed tests passed, 1 Live desktop metrics test skipped by design. Current captured timings include TaskEngine CRUD 0.3995 ms average, 1000-node fetch 0.4345 ms, ReminderScheduler 1000-task tick 0.2540 ms after warmup, SecureStore 10 MB save/load 41.3432/47.8530 ms, AuditChainWriter append 0.0230 ms average, and BugReporter submit+queue 2.7860 ms average.
 - Release Stress category: 100k audit-chain append+verify passed in 1370 ms; the 10 MB SecureStore save/load case passed with 53.4829/65.6757 ms.
 - Dedicated 10k audit-chain verification passed in 107 ms.
 - Live/provider tests were intentionally excluded and were not represented as green.
@@ -31,6 +31,7 @@
 - Crash capture coverage now verifies the manual crash hook returns only after the redacted report is durably queued, while the production path remains bounded to 200 ms.
 - Performance hardening coverage verifies the warmed scheduler path and UTF-8 byte-based SecureStore serialization remain below the documented thresholds.
 - Background lifecycle coverage now awaits updater-poll and in-flight scheduler synchronization points, removing fixed-sleep test races under loaded parallel execution.
+- UI coverage now instantiates the reusable SettingsView and MainWindow on an STA thread, validating the hierarchical task template and resource bindings at runtime.
 
 ## Remaining Gaps
 

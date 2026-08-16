@@ -16,6 +16,7 @@
 - `Orchestrator.StartAsync` now initializes the tray host, starts session locking, starts reminder scheduling and delivery, and starts the 15-minute compliance idle monitor.
 - Orchestrator startup now flushes the encrypted pending bug-report queue best-effort, and its owned 24-hour updater poll checks for manifests without auto-applying packages; updater poll shutdown is cancellation-aware and allows a bounded in-flight request to finish without blocking the rest of application teardown indefinitely.
 - Crash capture now synchronously commits the redacted crash report to the encrypted queue before the unhandled-exception callback returns, with a 200 ms bound and no provider dependency.
+- The declared Phase 2B/2E UI surface is now wired: settings is a reusable `SettingsView`, tasks render from the existing nested `TaskNode.Children` tree with priority colors and deadlines, and delete invokes the existing `ITaskEngine.DeleteAsync` contract.
 - `ShowTreeRequested` creates and initializes the main WPF view model/window on the application dispatcher.
 - Scheduler-thread reminder delivery and session-lock callbacks now marshal Tier 2 WPF windows, main-window privacy hides, and tray balloons onto their owning WPF dispatcher.
 - Session-lock state transitions are serialized before audit completion and event publication, preserving transition order when lock/unlock observations overlap.

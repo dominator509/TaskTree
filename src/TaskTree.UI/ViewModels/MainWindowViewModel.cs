@@ -85,5 +85,25 @@ namespace TaskTree.UI.ViewModels
             catch (Exception ex) { _logger.LogError(ex, "QuickAddAsync failed: {0}: {1}", ex.GetType().Name, ex.Message); StatusMessage = "Add failed - see log"; }
             finally { IsBusy = false; }
         }
+
+        [RelayCommand]
+        private async Task DeleteTaskAsync(TaskNode? node)
+        {
+            if (node is null) return;
+
+            try
+            {
+                IsBusy = true;
+                await _taskEngine.DeleteAsync(node.Id);
+                await RefreshAsync();
+                StatusMessage = "Task deleted";
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "DeleteTaskAsync failed: {0}: {1}", ex.GetType().Name, ex.Message);
+                StatusMessage = "Delete failed - see log";
+            }
+            finally { IsBusy = false; }
+        }
     }
 }

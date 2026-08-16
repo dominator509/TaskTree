@@ -6,9 +6,9 @@
 ## Current Evidence
 
 - Release build: passed with 0 warnings and 0 errors.
-- Offline contract suite: 13 applicable assemblies, 402 passing non-live, non-performance tests, 0 failures, 0 skips. The full solution run reports 414 passed and 1 intentionally skipped Live desktop-metrics test (415 total). Performance tests run in a separate lane because their latency thresholds are timing-sensitive under parallel solution execution.
-- Performance lane: 7 measurable Release cases passed in isolation; the separate Live desktop-metrics case remains intentionally excluded. Current measured ReminderScheduler 1,000-task tick is 0.1596 ms; 10 MB SecureStore save/load is 47.3427/47.9444 ms. 10k and 100k audit-chain checks passed.
-- Built-in SDK Code Coverage: the current `--collect:"Code Coverage"` rerun passed 402 non-live, non-performance tests and produced a fresh ignored `TestResults/` artifact. The last fully converted production-source report remains 1,651/2,137 lines covered (77.26%); no repo-local Cobertura converter is checked in.
+- Offline contract suite: 13 applicable assemblies, 404 passing non-live, non-performance tests, 0 failures, 0 skips. The full solution run reports 415 passed and 1 intentionally skipped Live desktop-metrics test (416 total). Performance tests run in a separate lane because their latency thresholds are timing-sensitive under parallel solution execution.
+- Performance lane: 7 measurable Release cases passed in isolation; the separate Live desktop-metrics case remains intentionally excluded. Current measured ReminderScheduler 1,000-task tick is 0.2540 ms; 10 MB SecureStore save/load is 41.3432/47.8530 ms. 10k and 100k audit-chain checks passed.
+- Built-in SDK Code Coverage: the current `--collect:"Code Coverage"` rerun passed 404 non-live, non-performance tests and produced a fresh ignored `TestResults/` artifact. The last fully converted production-source report remains 1,651/2,137 lines covered (77.26%); no repo-local Cobertura converter is checked in.
 - Packaging preflight: `packaging/build-msix.ps1` now resolves the installed x64 Windows SDK tools and stages the manifest/assets layout, then fails before restore with the exact missing-assets gate because `packaging/Assets/` is absent.
 - Production source contains no `NotImplementedException` executable stubs for the reviewed Phase 5E paths.
 - Removed the unreferenced reminder-delivery placeholder; DI and runtime tests continue to exercise the implemented `ReminderDeliveryService` router.
@@ -37,6 +37,7 @@
 - Closed the remaining local maintenance-wiring gap without changing public interfaces: Orchestrator now flushes queued bug reports at startup and owns a cancellation-aware 24-hour updater poll, with a bounded shutdown wait for an in-flight provider request.
 - Closed a crash-capture durability gap without changing public interfaces: the unhandled-exception callback now synchronously commits the redacted report to the encrypted queue before returning, bounded to 200 ms and independent of live providers.
 - Closed two test-harness timing gaps without changing application behavior: updater polling and the scheduler bounded-stop case now await explicit background synchronization signals rather than fixed sleeps.
+- Closed a local Phase 2B/2E UI surface gap without changing public contracts: the declared SettingsView is reusable, the main window renders nested tasks with priority colors/deadlines, delete is wired to ITaskEngine.DeleteAsync, and STA XAML smoke coverage passes.
 - Validation was local-only; no production secrets, signing keys, PHI source lists, or provider endpoints were used.
 
 ## Acceptance Blockers
