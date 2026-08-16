@@ -54,6 +54,28 @@ namespace TaskTree.Orchestrator.Tests
         }
 
         [TestMethod, TestCategory("Offline")]
+        public async Task StartAsync_CalledTwice_PreservesRunningLifecycle()
+        {
+            var h = Harness.Create();
+            var orchestrator = h.Create();
+
+            await orchestrator.StartAsync(CancellationToken.None);
+            await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                () => orchestrator.StartAsync(CancellationToken.None));
+
+            await orchestrator.StopAsync();
+
+            Assert.AreEqual(0, h.TrayHostShowTreeSubscriptions);
+            Assert.AreEqual(0, h.TrayHostAddTaskSubscriptions);
+            Assert.AreEqual(0, h.TrayHostExitSubscriptions);
+            Assert.AreEqual(0, h.SessionLockSubscriptions);
+            h.SessionLock.Verify(x => x.StopAsync(), Times.Once);
+            h.ReminderScheduler.Verify(x => x.StopAsync(), Times.Once);
+            h.ReminderDelivery.Verify(x => x.StopAsync(), Times.Once);
+            h.TrayHost.Verify(x => x.Dispose(), Times.Once);
+        }
+
+        [TestMethod, TestCategory("Offline")]
         public async Task StopAsync_AfterStart_UnsubscribesStopsAndAuditsShutdown()
         {
             var h = Harness.Create();
@@ -73,6 +95,65 @@ namespace TaskTree.Orchestrator.Tests
             Assert.AreEqual(2, h.AuditEntries.Count);
             Assert.AreEqual("Shutdown", h.AuditEntries[1].Action);
             Assert.AreEqual("success", h.AuditEntries[1].Result);
+        }
+
+        [TestMethod, TestCategory("Offline")]
+        public async Task StartAsync_WhenDependencyFails_UnwindsAndCanRestart()
+        {
+            var h = Harness.Create();
+            var failOnce = true;
+            h.ReminderScheduler
+                .Setup(x => x.StartAsync(It.IsAny<CancellationToken>()))
+                .Returns(() => failOnce
+                    ? Task.FromException(new InvalidOperationException("synthetic scheduler start failure"))
+                    : Task.CompletedTask);
+            var orchestrator = h.Create();
+
+            await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                () => orchestrator.StartAsync(CancellationToken.None));
+
+            Assert.AreEqual(0, h.TrayHostShowTreeSubscriptions);
+            Assert.AreEqual(0, h.TrayHostAddTaskSubscriptions);
+            Assert.AreEqual(0, h.TrayHostExitSubscriptions);
+            Assert.AreEqual(0, h.SessionLockSubscriptions);
+            h.SessionLock.Verify(x => x.StopAsync(), Times.Once);
+            h.ReminderScheduler.Verify(x => x.StopAsync(), Times.Once);
+            h.ReminderDelivery.Verify(x => x.StopAsync(), Times.Never);
+            h.TrayHost.Verify(x => x.Dispose(), Times.Once);
+
+            failOnce = false;
+            await orchestrator.StartAsync(CancellationToken.None);
+            await orchestrator.StopAsync();
+
+            Assert.AreEqual(0, h.TrayHostShowTreeSubscriptions);
+            Assert.AreEqual(0, h.TrayHostAddTaskSubscriptions);
+            Assert.AreEqual(0, h.TrayHostExitSubscriptions);
+            Assert.AreEqual(0, h.SessionLockSubscriptions);
+            h.TrayHost.Verify(x => x.Dispose(), Times.Exactly(2));
+            Assert.AreEqual(2, h.AuditEntries.Count);
+        }
+
+        [TestMethod, TestCategory("Offline")]
+        public async Task StopAsync_WhenDependencyFails_StopsRemainingDependenciesAndReportsAggregate()
+        {
+            var h = Harness.Create();
+            h.SessionLock
+                .Setup(x => x.StopAsync())
+                .ThrowsAsync(new InvalidOperationException("synthetic session stop failure"));
+            var orchestrator = h.Create();
+            await orchestrator.StartAsync(CancellationToken.None);
+
+            await Assert.ThrowsExceptionAsync<AggregateException>(
+                orchestrator.StopAsync);
+
+            Assert.AreEqual(0, h.TrayHostShowTreeSubscriptions);
+            Assert.AreEqual(0, h.TrayHostAddTaskSubscriptions);
+            Assert.AreEqual(0, h.TrayHostExitSubscriptions);
+            Assert.AreEqual(0, h.SessionLockSubscriptions);
+            h.ReminderDelivery.Verify(x => x.StopAsync(), Times.Once);
+            h.ReminderScheduler.Verify(x => x.StopAsync(), Times.Once);
+            h.TrayHost.Verify(x => x.Dispose(), Times.Once);
+            Assert.AreEqual(2, h.AuditEntries.Count);
         }
 
         private sealed class Harness

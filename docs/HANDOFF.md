@@ -148,8 +148,8 @@ This section records the current checkout without deleting the historical v1.0.1
 | Phases 0-4 | Implemented in the current source tree; offline contracts and hardening lanes are green. | `TaskTree.sln`, `tests/`, `docs/test-gap-report.md` |
 | Phase 5A | Repository stitches and namespaces resolve. | Release build, derivation registry |
 | Phase 5B | Compile gap closure is green. | Release build: 0 warnings, 0 errors |
-| Phase 5C | Local gate complete: 363 non-live contract tests pass; production coverage is 1,527/2,003 lines (76.24%). | `docs/test-gap-report.md` |
-| Phase 5D | Offline composition is green; persisted hotkeys validate before native registration, and session-lock transitions are serialized. | `docs/integration-gap-report.md`, focused TrayHost/SessionLock tests |
+| Phase 5C | Local gate complete: 366 non-live contract tests pass; production coverage is 1,651/2,137 lines (77.26%). | `docs/test-gap-report.md` |
+| Phase 5D | Offline composition is green; persisted hotkeys validate before native registration, session-lock transitions are serialized, and orchestrator lifecycle failure paths unwind safely. | `docs/integration-gap-report.md`, focused lifecycle tests |
 | Phase 5E | Code paths are implemented, but live Windows/provider/package evidence remains open. | `docs/env-gap-report.md` |
 | Phase 5F | Not complete. Owner sign-off and release archive remain open. | `docs/final-validation-report.md` |
 

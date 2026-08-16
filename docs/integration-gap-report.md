@@ -12,6 +12,7 @@
 - `ShowTreeRequested` creates and initializes the main WPF view model/window on the application dispatcher.
 - Scheduler-thread reminder delivery and session-lock callbacks now marshal Tier 2 WPF windows, main-window privacy hides, and tray balloons onto their owning WPF dispatcher.
 - Session-lock state transitions are serialized before audit completion and event publication, preserving transition order when lock/unlock observations overlap.
+- Orchestrator startup failure now unwinds attempted dependency starts and event subscriptions; shutdown continues through remaining dependencies before reporting aggregate failures.
 
 ## Not Verified Here
 
