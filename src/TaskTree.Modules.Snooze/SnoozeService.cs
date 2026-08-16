@@ -31,9 +31,18 @@ namespace TaskTree.Modules.Snooze
                 if(!map.TryGetValue(taskId,out var state)) result=null;
                 else if(state.SnoozedUntilUtc<=_clock.UtcNow)
                 {
+                    var previous = new Dictionary<Guid,SnoozeState>(map);
                     map.Remove(taskId);
                     await SaveMapAsync(map).ConfigureAwait(false);
-                    await AuditAsync("SnoozeExpired",taskId).ConfigureAwait(false);
+                    try
+                    {
+                        await AuditAsync("SnoozeExpired",taskId).ConfigureAwait(false);
+                    }
+                    catch (Exception ex)
+                    {
+                        await RestoreMapAsync(previous, hadPersistedMap: true, ex).ConfigureAwait(false);
+                        throw;
+                    }
                     changed=new SnoozeChangedEventArgs(taskId,null,SnoozeChangeKind.Expired);
                     result=null;
                 }
@@ -52,12 +61,22 @@ namespace TaskTree.Modules.Snooze
             await _gate.WaitAsync().ConfigureAwait(false);
             try
             {
+                var hadPersistedMap = await _store.ExistsAsync(StorageKey).ConfigureAwait(false);
                 var map=await LoadAsync().ConfigureAwait(false);
+                var previous = new Dictionary<Guid,SnoozeState>(map);
                 var now=_clock.UtcNow;
                 var state=new SnoozeState(taskId,untilUtc,reason,map.TryGetValue(taskId,out var old)?old.CreatedAtUtc:now,now);
                 map[taskId]=state;
                 await SaveMapAsync(map).ConfigureAwait(false);
-                await AuditAsync("SnoozeCreated",taskId).ConfigureAwait(false);
+                try
+                {
+                    await AuditAsync("SnoozeCreated",taskId).ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    await RestoreMapAsync(previous, hadPersistedMap, ex).ConfigureAwait(false);
+                    throw;
+                }
                 changed=new SnoozeChangedEventArgs(taskId,state,SnoozeChangeKind.Created);
             }
             finally { _gate.Release(); }
@@ -71,10 +90,20 @@ namespace TaskTree.Modules.Snooze
             try
             {
                 var map=await LoadAsync().ConfigureAwait(false);
-                if(map.Remove(taskId))
+                if(map.TryGetValue(taskId, out _))
                 {
+                    var previous = new Dictionary<Guid,SnoozeState>(map);
+                    map.Remove(taskId);
                     await SaveMapAsync(map).ConfigureAwait(false);
-                    await AuditAsync("SnoozeCleared",taskId).ConfigureAwait(false);
+                    try
+                    {
+                        await AuditAsync("SnoozeCleared",taskId).ConfigureAwait(false);
+                    }
+                    catch (Exception ex)
+                    {
+                        await RestoreMapAsync(previous, hadPersistedMap: true, ex).ConfigureAwait(false);
+                        throw;
+                    }
                     changed=true;
                 }
             }
@@ -93,6 +122,20 @@ namespace TaskTree.Modules.Snooze
         }
         private async Task<Dictionary<Guid,SnoozeState>> LoadAsync()=>await _store.LoadAsync<Dictionary<Guid,SnoozeState>>(StorageKey)??new Dictionary<Guid,SnoozeState>();
         private Task SaveMapAsync(Dictionary<Guid,SnoozeState> map)=>_store.SaveAsync(StorageKey,map);
+        private async Task RestoreMapAsync(Dictionary<Guid,SnoozeState> previous, bool hadPersistedMap, Exception auditException)
+        {
+            try
+            {
+                if (hadPersistedMap)
+                    await SaveMapAsync(previous).ConfigureAwait(false);
+                else
+                    await _store.DeleteAsync(StorageKey).ConfigureAwait(false);
+            }
+            catch (Exception rollbackException)
+            {
+                _logger.LogError(rollbackException, "SnoozeService failed to restore state after audit failure: {0}: {1}; original: {2}: {3}", rollbackException.GetType().Name, rollbackException.Message, auditException.GetType().Name, auditException.Message);
+            }
+        }
         private Task AuditAsync(string action, Guid taskId)=>_compliance.AuditAsync(new AuditEntry{Module="SnoozeService",Action=action,Result="success",TargetId=taskId,Timestamp=_clock.UtcNow});
     }
 }

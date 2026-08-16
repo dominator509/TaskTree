@@ -13,6 +13,7 @@
 - Orchestrator verifies the compliance audit chain before event subscriptions; an invalid or failed verification is logged and audited as `ChainVerifyFailedAtStartup` without aborting startup.
 - Settings persistence, audit, and change notifications are serialized through the existing service boundary so overlapping UI operations cannot reorder the durable state and observer signal.
 - Failed settings audits restore the prior persisted value or remove a newly created record before the change notification is suppressed.
+- Failed SnoozeService create/clear/expiry audits restore the prior persisted map or remove a newly created record before the change notification is suppressed.
 - The application composition root registers the existing `HotkeyManager` singleton and injects it into `TrayHost`; the runtime path therefore loads `hotkeys/config` before registering the global binding.
 - `Orchestrator.StartAsync` now initializes the tray host, starts session locking, starts reminder scheduling and delivery, and starts the 15-minute compliance idle monitor.
 - Updater apply failure cleanup now returns the shared updater state machine to `Idle` even when a `StateChanged` observer throws after a state assignment.
