@@ -7,14 +7,8 @@
         Width="820" Height="720"
         WindowStyle="ThreeDBorderWindow"
         ShowInTaskbar="True"
+        Foreground="{DynamicResource TaskTreeForegroundBrush}"
         Background="{DynamicResource TaskTreeWindowBackgroundBrush}">
-    <Window.Resources>
-        <ResourceDictionary>
-            <ResourceDictionary.MergedDictionaries>
-                <ResourceDictionary Source="/TaskTree.UI;component/Themes/ThemeResources.xaml" />
-            </ResourceDictionary.MergedDictionaries>
-        </ResourceDictionary>
-    </Window.Resources>
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />

@@ -8,14 +8,8 @@
         Background="Transparent"
         Topmost="True"
         ShowInTaskbar="False"
-        WindowStartupLocation="Manual">
-    <Window.Resources>
-        <ResourceDictionary>
-            <ResourceDictionary.MergedDictionaries>
-                <ResourceDictionary Source="/TaskTree.UI;component/Themes/ThemeResources.xaml" />
-            </ResourceDictionary.MergedDictionaries>
-        </ResourceDictionary>
-    </Window.Resources>
+        WindowStartupLocation="Manual"
+        Foreground="{DynamicResource TaskTreeForegroundBrush}">
     <Border Background="{DynamicResource TaskTreePanelBackgroundBrush}"
             CornerRadius="{DynamicResource TaskTreePanelCornerRadius}"
             Padding="16"

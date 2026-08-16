@@ -5,6 +5,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -117,15 +118,24 @@ namespace TaskTree.Orchestrator.Tests
         {
             var h = Harness.Create();
             h.Compliance.Setup(x => x.VerifyChainIntegrityAsync()).ReturnsAsync(false);
-            var orchestrator = h.Create();
+            var auditIncidentRoot = Path.Combine(Path.GetTempPath(), "TaskTreeOrchestratorTests", Guid.NewGuid().ToString("N"));
+            var orchestrator = h.Create(auditIncidentRoot: auditIncidentRoot);
 
-            await orchestrator.StartAsync(CancellationToken.None);
-            await orchestrator.StopAsync();
+            try
+            {
+                await orchestrator.StartAsync(CancellationToken.None);
+                await orchestrator.StopAsync();
 
-            CollectionAssert.AreEqual(
-                new[] { "ChainVerifyFailedAtStartup", "Startup", "Shutdown" },
-                h.AuditEntries.ConvertAll(x => x.Action));
-            h.TrayHost.Verify(x => x.Initialize(), Times.Once);
+                CollectionAssert.AreEqual(
+                    new[] { "ChainVerifyFailedAtStartup", "Startup", "Shutdown" },
+                    h.AuditEntries.ConvertAll(x => x.Action));
+                h.TrayHost.Verify(x => x.Initialize(), Times.Once);
+                Assert.AreEqual(1, Directory.GetFiles(auditIncidentRoot, "audit-chain-last-known-good-*.json").Length);
+            }
+            finally
+            {
+                try { if (Directory.Exists(auditIncidentRoot)) Directory.Delete(auditIncidentRoot, recursive: true); } catch { }
+            }
         }
 
         [TestMethod, TestCategory("Offline")]
@@ -258,6 +268,7 @@ namespace TaskTree.Orchestrator.Tests
                 Compliance.Setup(x => x.StartIdleMonitor(It.IsAny<TimeSpan>()));
 
                 Compliance.Setup(x => x.VerifyChainIntegrityAsync()).ReturnsAsync(true);
+                Compliance.Setup(x => x.GetAuditChainAsync()).ReturnsAsync(Array.Empty<AuditEntry>());
 
                 Compliance.Setup(x => x.AuditAsync(It.IsAny<AuditEntry>()))
                     .Callback<AuditEntry>(AuditEntries.Add)
@@ -295,7 +306,8 @@ namespace TaskTree.Orchestrator.Tests
                 IClock? clock = null,
                 IAutoUpdater? autoUpdater = null,
                 IBugReporter? bugReporter = null,
-                TimeSpan? updatePollInterval = null)
+                TimeSpan? updatePollInterval = null,
+                string? auditIncidentRoot = null)
             {
                 return new Orchestrator(
                     taskEngine ?? TaskEngine.Object,
@@ -309,7 +321,8 @@ namespace TaskTree.Orchestrator.Tests
                     clock ?? Clock,
                     autoUpdater,
                     bugReporter,
-                    updatePollInterval);
+                    updatePollInterval,
+                    auditIncidentRoot);
             }
         }
     }

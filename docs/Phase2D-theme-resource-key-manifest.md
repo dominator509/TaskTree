@@ -15,6 +15,9 @@
 | TaskTreePanelBackgroundBrush | Panel/toast surface | #FFFFFF |
 | TaskTreePanelBorderBrush | Panel border | #D0D0D0 |
 | TaskTreeMutedTextBrush | Secondary text | #666666 |
+| TaskTreeForegroundBrush | Primary text and control foreground | #202020 light / #F2F2F2 dark |
+| TaskTreeInputBackgroundBrush | TextBox/ComboBox surface | #FFFFFF light / #353535 dark |
+| TaskTreeInputBorderBrush | TextBox/ComboBox border | #B8B8B8 light / #707070 dark |
 | TaskTreePanelPadding | Common panel padding | 12 |
 | TaskTreePanelCornerRadius | Common corner radius | 8 |
 
@@ -22,3 +25,4 @@
 
 - Gap #143: PriorityBrushProvider and ThemeResources must stay synchronized until a true WPF resource lookup/converter is introduced.
 - Gap #147: Phase 5C must load ThemeResources.xaml in a real WPF Application context and verify all keys resolve.
+- Runtime theme application now swaps the app-level light/dark resource dictionaries from the existing `ThemePreference`; `System` follows the Windows `AppsUseLightTheme` setting and falls back to light when unavailable.

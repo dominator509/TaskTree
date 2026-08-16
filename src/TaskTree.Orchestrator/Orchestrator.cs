@@ -6,6 +6,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using TaskTree.Core.Abstractions;
@@ -17,10 +18,10 @@ namespace TaskTree.Orchestrator
 {
     public sealed class Orchestrator : IOrchestrator, IDisposable
     {
-        private readonly ITaskEngine _taskEngine; private readonly IReminderScheduler _reminderScheduler; private readonly IComplianceCore _compliance; private readonly ITrayHost _trayHost; private readonly IReminderDeliveryService _reminderDeliveryService; private readonly ISettingsService _settingsService; private readonly ISessionLockService _sessionLock; private readonly IAppLogger _logger; private readonly IClock _clock; private readonly IAutoUpdater? _autoUpdater; private readonly IBugReporter? _bugReporter; private readonly TimeSpan _updatePollInterval;
+        private readonly ITaskEngine _taskEngine; private readonly IReminderScheduler _reminderScheduler; private readonly IComplianceCore _compliance; private readonly ITrayHost _trayHost; private readonly IReminderDeliveryService _reminderDeliveryService; private readonly ISettingsService _settingsService; private readonly ISessionLockService _sessionLock; private readonly IAppLogger _logger; private readonly IClock _clock; private readonly IAutoUpdater? _autoUpdater; private readonly IBugReporter? _bugReporter; private readonly TimeSpan _updatePollInterval; private readonly string _auditIncidentRoot;
         private readonly SemaphoreSlim _gate = new(1,1); private EventHandler? _showTreeHandler,_addTaskHandler,_exitHandler,_autoLogoffHandler; private EventHandler<SessionLockChangedEventArgs>? _sessionLockHandler; private bool _running,_disposed,_mainWindowHiddenBySessionLock; private MainWindow? _mainWindow; private MainWindowViewModel? _mainWindowViewModel; private CancellationTokenSource? _updatePollingCts; private Task? _updatePollingTask;
-        public Orchestrator(ITaskEngine taskEngine, IReminderScheduler reminderScheduler, IComplianceCore compliance, ITrayHost trayHost, IReminderDeliveryService reminderDeliveryService, ISettingsService settingsService, ISessionLockService sessionLock, IAppLogger logger, IClock clock, IAutoUpdater? autoUpdater = null, IBugReporter? bugReporter = null, TimeSpan? updatePollInterval = null)
-        { _taskEngine=taskEngine??throw new ArgumentNullException(nameof(taskEngine)); _reminderScheduler=reminderScheduler??throw new ArgumentNullException(nameof(reminderScheduler)); _compliance=compliance??throw new ArgumentNullException(nameof(compliance)); _trayHost=trayHost??throw new ArgumentNullException(nameof(trayHost)); _reminderDeliveryService=reminderDeliveryService??throw new ArgumentNullException(nameof(reminderDeliveryService)); _settingsService=settingsService??throw new ArgumentNullException(nameof(settingsService)); _sessionLock=sessionLock??throw new ArgumentNullException(nameof(sessionLock)); _logger=logger??throw new ArgumentNullException(nameof(logger)); _clock=clock??throw new ArgumentNullException(nameof(clock)); _autoUpdater=autoUpdater; _bugReporter=bugReporter; _updatePollInterval=updatePollInterval??TimeSpan.FromHours(24); if(_updatePollInterval<=TimeSpan.Zero)throw new ArgumentOutOfRangeException(nameof(updatePollInterval),"Update poll interval must be positive."); }
+        public Orchestrator(ITaskEngine taskEngine, IReminderScheduler reminderScheduler, IComplianceCore compliance, ITrayHost trayHost, IReminderDeliveryService reminderDeliveryService, ISettingsService settingsService, ISessionLockService sessionLock, IAppLogger logger, IClock clock, IAutoUpdater? autoUpdater = null, IBugReporter? bugReporter = null, TimeSpan? updatePollInterval = null, string? auditIncidentRoot = null)
+        { _taskEngine=taskEngine??throw new ArgumentNullException(nameof(taskEngine)); _reminderScheduler=reminderScheduler??throw new ArgumentNullException(nameof(reminderScheduler)); _compliance=compliance??throw new ArgumentNullException(nameof(compliance)); _trayHost=trayHost??throw new ArgumentNullException(nameof(trayHost)); _reminderDeliveryService=reminderDeliveryService??throw new ArgumentNullException(nameof(reminderDeliveryService)); _settingsService=settingsService??throw new ArgumentNullException(nameof(settingsService)); _sessionLock=sessionLock??throw new ArgumentNullException(nameof(sessionLock)); _logger=logger??throw new ArgumentNullException(nameof(logger)); _clock=clock??throw new ArgumentNullException(nameof(clock)); _autoUpdater=autoUpdater; _bugReporter=bugReporter; _updatePollInterval=updatePollInterval??TimeSpan.FromHours(24); if(_updatePollInterval<=TimeSpan.Zero)throw new ArgumentOutOfRangeException(nameof(updatePollInterval),"Update poll interval must be positive."); _auditIncidentRoot=string.IsNullOrWhiteSpace(auditIncidentRoot)?GetDefaultAuditIncidentRoot():auditIncidentRoot; }
         public async Task StartAsync(CancellationToken ct)
         {
             ThrowIfDisposed();
@@ -154,6 +155,18 @@ namespace TaskTree.Orchestrator
 
             if (chainValid) return;
 
+            IReadOnlyList<AuditEntry>? chain = null;
+            try
+            {
+                chain = await _compliance.GetAuditChainAsync().ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                try { _logger.LogError(ex, "Unable to load the audit chain for startup integrity handling: {0}: {1}", ex.GetType().Name, ex.Message); } catch { }
+            }
+
+            var exportPath = TryExportLastKnownGoodChain(chain);
+            ShowAuditIntegrityWarning(exportPath);
             try { _logger.LogError(null, "Audit chain verification failed at startup."); } catch { }
             try
             {
@@ -168,6 +181,57 @@ namespace TaskTree.Orchestrator
             catch (Exception ex)
             {
                 try { _logger.LogError(ex, "Unable to audit startup chain verification failure: {0}: {1}", ex.GetType().Name, ex.Message); } catch { }
+            }
+        }
+
+        private string? TryExportLastKnownGoodChain(IReadOnlyList<AuditEntry>? chain)
+        {
+            if (chain is null) return null;
+
+            try
+            {
+                var local = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+                if (string.IsNullOrWhiteSpace(local)) return null;
+                return AuditChainIncidentExporter.Export(
+                    chain,
+                    _auditIncidentRoot,
+                    _clock.UtcNow);
+            }
+            catch (Exception ex)
+            {
+                try { _logger.LogError(ex, "Unable to export the last-known-good audit chain: {0}: {1}", ex.GetType().Name, ex.Message); } catch { }
+                return null;
+            }
+        }
+
+        private static string GetDefaultAuditIncidentRoot()
+        {
+            var local = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+            return Path.Combine(local, "TaskTree", "audit-incidents");
+        }
+
+        private void ShowAuditIntegrityWarning(string? exportPath)
+        {
+            var message = exportPath is null
+                ? "TaskTree detected an audit-chain integrity failure. The last-known-good audit export could not be written."
+                : $"TaskTree detected an audit-chain integrity failure. A last-known-good audit export was written to:\n\n{exportPath}";
+            try
+            {
+                var application = System.Windows.Application.Current;
+                if (application is null) return;
+
+                void Show() => System.Windows.MessageBox.Show(
+                    message,
+                    "TaskTree Audit Integrity Warning",
+                    System.Windows.MessageBoxButton.OK,
+                    System.Windows.MessageBoxImage.Warning);
+
+                if (application.Dispatcher.CheckAccess()) Show();
+                else application.Dispatcher.Invoke(Show);
+            }
+            catch (Exception ex)
+            {
+                try { _logger.LogError(ex, "Unable to show the audit integrity warning: {0}: {1}", ex.GetType().Name, ex.Message); } catch { }
             }
         }
 

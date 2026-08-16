@@ -37,7 +37,7 @@ Session lock/privacy mode protects local task visibility when the user is idle o
 
 ### Settings
 
-Settings control reminder preferences, privacy behavior, update settings, and compliance-related defaults. Compliance Mode semantics must be confirmed during Phase 4A/5F follow-up.
+Settings control reminder preferences, privacy behavior, update settings, theme selection, and compliance-related defaults. Light, Dark, and System theme choices apply at runtime and persist through the existing settings service. Compliance Mode semantics must be confirmed during Phase 4A/5F follow-up.
 
 ### Bug Report Submission
 
@@ -53,6 +53,7 @@ TaskTree verifies update manifests and package hashes, stages offline or opt-in 
 - SMTP/GitHub delivery requires deployment configuration and provider validation.
 - MSIX packaging/signing/install requires live Windows tooling.
 - Tray/UI latency, idle RAM, CPU, and first-launch behavior require installed-app validation.
+- Startup audit-chain tamper warnings and incident exports are implemented locally but require interactive desktop and owner policy validation.
 - Final compliance status requires organizational policy review and Phase 5F sign-off.
 
 ## Safety and Privacy Notes
