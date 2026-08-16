@@ -148,7 +148,7 @@ This section records the current checkout without deleting the historical v1.0.1
 | Phases 0-4 | Implemented in the current source tree; offline contracts and hardening lanes are green. | `TaskTree.sln`, `tests/`, `docs/test-gap-report.md` |
 | Phase 5A | Repository stitches and namespaces resolve. | Release build, derivation registry |
 | Phase 5B | Compile gap closure is green. | Release build: 0 warnings, 0 errors |
-| Phase 5C | Local gate complete: 373 non-live contract tests pass; 7 measurable performance tests pass; the last fully converted production coverage report is 1,651/2,137 lines (77.26%). | `docs/test-gap-report.md` |
+| Phase 5C | Local gate complete: 371 non-live, non-performance contract tests pass; 7 measurable performance tests pass; the last fully converted production coverage report is 1,651/2,137 lines (77.26%). | `docs/test-gap-report.md` |
 | Phase 5D | Offline composition is green; persisted hotkeys validate before native registration, session-lock transitions are serialized, and orchestrator lifecycle failure paths unwind safely. | `docs/integration-gap-report.md`, focused lifecycle tests |
 | Phase 5E | Code paths are implemented; staged updater packages promote through a temporary file, reject unsafe version path components, and are revalidated before apply. Live Windows/provider/package evidence remains open. | `docs/env-gap-report.md`, `src/TaskTree.Modules.AutoUpdater/` |
 | Phase 5F | Not complete. Owner sign-off and release archive remain open. | `docs/final-validation-report.md` |
@@ -167,3 +167,4 @@ This section records the current checkout without deleting the historical v1.0.1
 | 1.0.56 | 2026-08-16 | Current checkout state, Phase 5C-5F evidence, and carry-forward external gates recorded; historical Phase 1C content preserved. |
 | 1.0.57 | 2026-08-16 | Orchestrator startup unwind, shutdown aggregation, and duplicate-start lifecycle preservation recorded. |
 | 1.0.58 | 2026-08-16 | Updater staged-package integrity and path-safety hardening recorded with current offline validation evidence. |
+| 1.0.59 | 2026-08-16 | Bug-report queue transaction and concurrent flush serialization recorded with refreshed full-suite evidence. |

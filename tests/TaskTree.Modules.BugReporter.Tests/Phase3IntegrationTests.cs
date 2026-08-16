@@ -5,6 +5,7 @@
 
 using System;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
@@ -47,6 +48,17 @@ namespace TaskTree.Modules.BugReporter.Tests
         }
 
         [TestMethod]
+        public async Task Queue_ConcurrentDistinctSubmissions_PreserveAllReports()
+        {
+            var q = new BugReportQueue(new InMemorySecureStore());
+            var submissions = Enumerable.Range(0, 20)
+                .Select(i => q.EnqueueAsync(Report(BugSeverity.Normal, i.ToString("X64"))))
+                .ToArray();
+            await Task.WhenAll(submissions);
+            Assert.AreEqual(20, await q.CountAsync());
+        }
+
+        [TestMethod]
         public async Task FlushQueueAsync_TrivialReport_FileDropsAndRemovesFromQueue()
         {
             var q = new BugReportQueue(new InMemorySecureStore());
@@ -68,6 +80,19 @@ namespace TaskTree.Modules.BugReporter.Tests
             var reporter = new BugReporter(q, new RedactionPipeline(Redactor().Object), new CrashCaptureHook(), clock, new NullLogger(), router);
             Assert.AreEqual(0, await reporter.FlushQueueAsync());
             Assert.AreEqual(1, await q.CountAsync());
+        }
+
+        [TestMethod]
+        public async Task FlushQueueAsync_ConcurrentCallsDeliverOnce()
+        {
+            var q = new BugReportQueue(new InMemorySecureStore());
+            await q.EnqueueAsync(Report(BugSeverity.Trivial, new string('G',64), redacted:true));
+            var clock = new FakeClock(T);
+            var router = new DeliveryRouter(new EmailDeliveryAdapter(), new GitHubIssueAdapter(), new FileDropAdapter(Root()), new BugReportRateLimiter(), clock);
+            var reporter = new BugReporter(q, new RedactionPipeline(Redactor().Object), new CrashCaptureHook(), clock, new NullLogger(), router);
+            var results = await Task.WhenAll(reporter.FlushQueueAsync(), reporter.FlushQueueAsync());
+            Assert.AreEqual(1, results.Sum());
+            Assert.AreEqual(0, await q.CountAsync());
         }
 
         [TestMethod]

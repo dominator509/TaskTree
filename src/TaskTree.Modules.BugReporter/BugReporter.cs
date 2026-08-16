@@ -6,6 +6,7 @@
 using System;
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using TaskTree.Core.Abstractions;
 using TaskTree.Core.Enums;
@@ -15,7 +16,7 @@ namespace TaskTree.Modules.BugReporter
 {
     public sealed class BugReporter : IBugReporter
     {
-        private readonly BugReportQueue _queue; private readonly RedactionPipeline _redaction; private readonly CrashCaptureHook _crashHook; private readonly IClock _clock; private readonly IAppLogger _logger; private readonly DeliveryRouter? _deliveryRouter;
+        private readonly BugReportQueue _queue; private readonly RedactionPipeline _redaction; private readonly CrashCaptureHook _crashHook; private readonly IClock _clock; private readonly IAppLogger _logger; private readonly DeliveryRouter? _deliveryRouter; private readonly SemaphoreSlim _flushGate = new(1, 1);
         public BugReporter(BugReportQueue queue, RedactionPipeline redaction, CrashCaptureHook crashHook, IClock clock, IAppLogger logger, DeliveryRouter? deliveryRouter=null)
         { _queue=queue??throw new ArgumentNullException(nameof(queue)); _redaction=redaction??throw new ArgumentNullException(nameof(redaction)); _crashHook=crashHook??throw new ArgumentNullException(nameof(crashHook)); _clock=clock??throw new ArgumentNullException(nameof(clock)); _logger=logger??throw new ArgumentNullException(nameof(logger)); _deliveryRouter=deliveryRouter; }
         public bool RedactionEnabled { get; set; } = true;
@@ -23,13 +24,18 @@ namespace TaskTree.Modules.BugReporter
         public async Task<int> FlushQueueAsync()
         {
             if(_deliveryRouter is null){_logger.LogWarning("BugReporter delivery router not configured.");return 0;}
-            var delivered=0;
-            foreach(var report in await _queue.GetAllAsync().ConfigureAwait(false))
+            await _flushGate.WaitAsync().ConfigureAwait(false);
+            try
             {
-                var result=await _deliveryRouter.DeliverAsync(report).ConfigureAwait(false);
-                if(result.Success){await _queue.RemoveAsync(report.Id).ConfigureAwait(false);delivered++;}
+                var delivered=0;
+                foreach(var report in await _queue.GetAllAsync().ConfigureAwait(false))
+                {
+                    var result=await _deliveryRouter.DeliverAsync(report).ConfigureAwait(false);
+                    if(result.Success){await _queue.RemoveAsync(report.Id).ConfigureAwait(false);delivered++;}
+                }
+                return delivered;
             }
-            return delivered;
+            finally { _flushGate.Release(); }
         }
         public void HookGlobalCrashHandler(){_crashHook.CrashCaptured+=OnCrashCaptured;_crashHook.HookGlobalCrashHandler();}
         private async void OnCrashCaptured(object? sender, Exception ex){try{await SubmitAsync(new BugReport(Guid.NewGuid(),_clock.UtcNow,BugReportType.Crash,BugSeverity.High,ex.GetType().Name,new BugReportDescription("Application should not crash.",ex.ToString()),new BugReportEnvironment(Environment.OSVersion.VersionString,"unknown","unknown",UpdateChannel.Stable),Guid.NewGuid(),string.Empty,Array.Empty<BugReportAttachment>(),false)).ConfigureAwait(false);}catch(Exception captureEx){_logger.LogError(captureEx,"Crash capture queue failed: {0}: {1}",captureEx.GetType().Name,captureEx.Message);}}
