@@ -6,7 +6,7 @@
 ## Evidence
 
 - `rtk C:\Users\domin\.dotnet\dotnet.exe build TaskTree.sln -c Release --no-restore`: passed, 0 warnings, 0 errors.
-- `rtk C:\Users\domin\.dotnet\dotnet.exe test TaskTree.sln -c Release --no-build --filter "TestCategory!=Live&TestCategory!=Performance"`: passed, 13 applicable assemblies, 415 tests, 0 failures, 0 skips. The last Live-inclusive baseline before this delta was 416 total tests, with 415 passed and 1 intentionally skipped Live desktop-metrics test; the current Live-inclusive lane was not repeated.
+- `rtk C:\Users\domin\.dotnet\dotnet.exe test TaskTree.sln -c Release --no-build --filter "TestCategory!=Live&TestCategory!=Performance"`: passed, 13 applicable assemblies, 418 tests, 0 failures, 0 skips. The last Live-inclusive baseline before this delta was 416 total tests, with 415 passed and 1 intentionally skipped Live desktop-metrics test; the current Live-inclusive lane was not repeated.
 - `rtk C:\Users\domin\.dotnet\dotnet.exe test tests\TaskTree.Perf.Tests\TaskTree.Perf.Tests.csproj -c Release --no-build --filter "TestCategory=Performance&TestCategory!=Live"`: passed, 7 measurable performance tests, 0 failures, 0 skips.
 - Built-in SDK coverage: the previous `rtk C:\Users\domin\.dotnet\dotnet.exe test TaskTree.sln -c Release --no-build --filter "TestCategory!=Live&TestCategory!=Performance" --collect:"Code Coverage"` run passed 404 tests and produced a fresh `.coverage` artifact under ignored `TestResults/`. The last fully converted production-source report is 1,651/2,137 lines covered (77.26%); coverage was not rerun for this lifecycle-only delta.
 - `git diff --check`: passed.
@@ -35,10 +35,11 @@
 - UI coverage now instantiates the reusable SettingsView and MainWindow on an STA thread, validating the hierarchical task template and resource bindings at runtime.
 - UI coverage now verifies runtime Light/Dark resource selection and dispatcher-safe preference changes; Orchestrator coverage verifies atomic last-known-good audit-prefix export on startup-chain failure.
 - Hash-chain coverage now verifies malformed null entries fail closed; SettingsService coverage verifies invalid persisted settings return the documented defaults instead of entering the UI.
+- SettingsService coverage verifies failed save/reset audits restore the prior persisted value or remove a newly created record, and suppress `SettingsChanged`.
 - ComplianceCore coverage verifies empty production audit actors resolve to the current Windows user SID; TaskEngine coverage remains green after removing its username fallback.
 - SessionLock coverage verifies an audited lock transition rolls back its in-memory state when persistence fails and can be retried successfully.
 - HotkeyManager coverage verifies failed audits restore the previous persisted configuration, suppress the change event, and remove a newly created record when no prior configuration exists.
-- Post-v1.0.81 rerun: 415 non-live, non-performance tests passed; 7 performance tests passed; the Live-inclusive lane was not repeated after the additive test changes.
+- Post-v1.0.82 rerun: 418 non-live, non-performance tests passed; 7 performance tests passed; the Live-inclusive lane was not repeated after the additive test changes.
 - Orchestrator lifecycle coverage verifies compliance auto-logoff subscription cleanup, and the scheduler loop test awaits its real reminder signal with a bounded timeout instead of relying on a fixed sleep.
 
 ## Remaining Gaps

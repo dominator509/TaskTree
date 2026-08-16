@@ -38,6 +38,63 @@ namespace TaskTree.Modules.Settings.Tests
         [TestMethod] public async Task GetAsync_InvalidPersistedSettings_ReturnsDefault(){var (svc,store,_)=Build();await store.SaveAsync("settings/app",TaskTreeSettings.Default with { ThemePreference=(ThemePreference)999 });Assert.AreEqual(TaskTreeSettings.Default,await svc.GetAsync());}
         [TestMethod] public async Task SaveAsync_RaisesSettingsChanged(){var (svc,_,_)=Build();var raised=false;svc.SettingsChanged+=(s,e)=>raised=true;await svc.SaveAsync(TaskTreeSettings.Default);Assert.IsTrue(raised);}
         [TestMethod] public async Task SaveAsync_AuditsSettingsSaved(){var (svc,_,c)=Build();await svc.SaveAsync(TaskTreeSettings.Default);c.Verify(x=>x.AuditAsync(It.Is<AuditEntry>(e=>e.Module=="SettingsService"&&e.Action=="SettingsSaved"&&e.Result=="success")),Times.Once);}
+
+        [TestMethod]
+        public async Task SaveAsync_AuditFailure_RollsBackPreviousSettingsAndSuppressesEvent()
+        {
+            var (svc, _, compliance) = Build();
+            var previous = TaskTreeSettings.Default with { ThemePreference = ThemePreference.Dark };
+            await svc.SaveAsync(previous);
+
+            var auditException = new InvalidOperationException("audit unavailable");
+            compliance.Reset();
+            compliance.Setup(c => c.AuditAsync(It.IsAny<AuditEntry>())).ThrowsAsync(auditException);
+            var eventRaised = false;
+            svc.SettingsChanged += (_, _) => eventRaised = true;
+
+            var thrown = await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                () => svc.SaveAsync(TaskTreeSettings.Default with { ThemePreference = ThemePreference.Light }));
+
+            Assert.AreSame(auditException, thrown);
+            Assert.AreEqual(previous, await svc.GetAsync());
+            Assert.IsFalse(eventRaised);
+        }
+
+        [TestMethod]
+        public async Task SaveAsync_AuditFailure_WithNoPriorSettings_RemovesNewRecord()
+        {
+            var (svc, store, compliance) = Build();
+            compliance.Reset();
+            compliance.Setup(c => c.AuditAsync(It.IsAny<AuditEntry>()))
+                .ThrowsAsync(new InvalidOperationException("audit unavailable"));
+
+            await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                () => svc.SaveAsync(TaskTreeSettings.Default with { ShowCompletedTasks = true }));
+
+            Assert.IsFalse(await store.ExistsAsync("settings/app"));
+            Assert.AreEqual(TaskTreeSettings.Default, await svc.GetAsync());
+        }
+
+        [TestMethod]
+        public async Task ResetAsync_AuditFailure_RollsBackPreviousSettingsAndSuppressesEvent()
+        {
+            var (svc, _, compliance) = Build();
+            var previous = TaskTreeSettings.Default with { ShowCompletedTasks = true };
+            await svc.SaveAsync(previous);
+
+            var auditException = new InvalidOperationException("audit unavailable");
+            compliance.Reset();
+            compliance.Setup(c => c.AuditAsync(It.IsAny<AuditEntry>())).ThrowsAsync(auditException);
+            var eventRaised = false;
+            svc.SettingsChanged += (_, _) => eventRaised = true;
+
+            var thrown = await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => svc.ResetAsync());
+
+            Assert.AreSame(auditException, thrown);
+            Assert.AreEqual(previous, await svc.GetAsync());
+            Assert.IsFalse(eventRaised);
+        }
+
         [TestMethod] public async Task ResetAsync_SavesDefault(){var (svc,_,_)=Build();await svc.SaveAsync(TaskTreeSettings.Default with { ShowCompletedTasks=true });await svc.ResetAsync();Assert.AreEqual(TaskTreeSettings.Default, await svc.GetAsync());}
         [TestMethod] public async Task ResetAsync_RaisesSettingsChanged(){var (svc,_,_)=Build();var raised=false;svc.SettingsChanged+=(s,e)=>raised=true;await svc.ResetAsync();Assert.IsTrue(raised);}
         [TestMethod] public async Task ResetAsync_AuditsSettingsReset(){var (svc,_,c)=Build();await svc.ResetAsync();c.Verify(x=>x.AuditAsync(It.Is<AuditEntry>(e=>e.Module=="SettingsService"&&e.Action=="SettingsReset"&&e.Result=="success")),Times.Once);}

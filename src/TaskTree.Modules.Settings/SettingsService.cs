@@ -55,14 +55,23 @@ namespace TaskTree.Modules.Settings
             await _gate.WaitAsync().ConfigureAwait(false);
             try
             {
+                var previous = await _secureStore.LoadAsync<TaskTreeSettings>(StorageKey).ConfigureAwait(false);
                 await _secureStore.SaveAsync(StorageKey, settings).ConfigureAwait(false);
-                await _compliance.AuditAsync(new AuditEntry
+                try
                 {
-                    Module = "SettingsService",
-                    Action = "SettingsSaved",
-                    Result = "success",
-                    Timestamp = _clock.UtcNow,
-                }).ConfigureAwait(false);
+                    await _compliance.AuditAsync(new AuditEntry
+                    {
+                        Module = "SettingsService",
+                        Action = "SettingsSaved",
+                        Result = "success",
+                        Timestamp = _clock.UtcNow,
+                    }).ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    await RestoreAsync(previous, ex).ConfigureAwait(false);
+                    throw;
+                }
             }
             catch (Exception ex)
             {
@@ -80,18 +89,47 @@ namespace TaskTree.Modules.Settings
             await _gate.WaitAsync().ConfigureAwait(false);
             try
             {
+                var previous = await _secureStore.LoadAsync<TaskTreeSettings>(StorageKey).ConfigureAwait(false);
                 await _secureStore.SaveAsync(StorageKey, defaults).ConfigureAwait(false);
-                await _compliance.AuditAsync(new AuditEntry
+                try
                 {
-                    Module = "SettingsService",
-                    Action = "SettingsReset",
-                    Result = "success",
-                    Timestamp = _clock.UtcNow,
-                }).ConfigureAwait(false);
+                    await _compliance.AuditAsync(new AuditEntry
+                    {
+                        Module = "SettingsService",
+                        Action = "SettingsReset",
+                        Result = "success",
+                        Timestamp = _clock.UtcNow,
+                    }).ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    await RestoreAsync(previous, ex).ConfigureAwait(false);
+                    throw;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "SettingsService.ResetAsync failed: {0}: {1}", ex.GetType().Name, ex.Message);
+                throw;
             }
             finally { _gate.Release(); }
 
             SettingsChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        private async Task RestoreAsync(TaskTreeSettings? previous, Exception auditException)
+        {
+            try
+            {
+                if (previous is null)
+                    await _secureStore.DeleteAsync(StorageKey).ConfigureAwait(false);
+                else
+                    await _secureStore.SaveAsync(StorageKey, previous).ConfigureAwait(false);
+            }
+            catch (Exception rollbackException)
+            {
+                _logger.LogError(rollbackException, "SettingsService failed to restore settings after audit failure: {0}: {1}; original: {2}: {3}", rollbackException.GetType().Name, rollbackException.Message, auditException.GetType().Name, auditException.Message);
+            }
         }
 
         private static void Validate(TaskTreeSettings? settings)
