@@ -10,6 +10,7 @@
 - Updater: HTTPS manifest polling, Ed25519 verification, channel/rollout checks, hash-verified download/staging when explicitly enabled, MSIX installation through `Add-AppxPackage`, and last-known-good rollback.
 - Bug reporting: runtime-configured SMTP and GitHub Issues delivery. Missing configuration returns an explicit failure and never logs credentials.
 - Reminder fallback: Tier 1 reports unavailable without package identity; Tier 3 uses the live tray balloon path.
+- Dispatcher safety: scheduler-thread reminder delivery and session-lock callbacks marshal WPF windows and tray notifications onto the owning dispatcher.
 - Packaging preflight: `build-msix.ps1` resolves the installed Windows SDK tools by architecture, uses the repo-local .NET 8 executable when present, stages `Package.appxmanifest` beside the published output, and fails closed before restore when required assets are absent.
 
 ## Open Environment Gates

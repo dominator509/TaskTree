@@ -1,6 +1,7 @@
 // SPEC-DERIVED-PHASE2F  HALT #17 headless-safe test
 // Gap #178: visible ReminderToast hide-on-lock test deferred to Phase 5C WPF integration.
 
+using System;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 using TaskTree.Core.Abstractions;
@@ -21,6 +22,18 @@ namespace TaskTree.Orchestrator.Tests
             session.SetupAdd(s => s.SessionLockChanged += It.IsAny<System.EventHandler<SessionLockChangedEventArgs>>());
             var adapter = new ToastTier2Adapter(logger.Object, session.Object);
             Assert.IsFalse(adapter.TryDeliver(new ReminderEvent()));
+        }
+
+        [TestMethod]
+        public void TryDeliver_NullEvent_ThrowsArgumentNullException()
+        {
+            var logger = new Mock<IAppLogger>(MockBehavior.Loose);
+            var session = new Mock<ISessionLockService>(MockBehavior.Strict);
+            session.SetupGet(s => s.IsLocked).Returns(false);
+            session.SetupAdd(s => s.SessionLockChanged += It.IsAny<System.EventHandler<SessionLockChangedEventArgs>>());
+            var adapter = new ToastTier2Adapter(logger.Object, session.Object);
+
+            Assert.ThrowsException<ArgumentNullException>(() => adapter.TryDeliver(null!));
         }
     }
 }

@@ -31,6 +31,7 @@ namespace TaskTree.Orchestrator
 
         public bool TryDeliver(ReminderEvent evt)
         {
+            ArgumentNullException.ThrowIfNull(evt);
             if (_sessionLock.IsLocked)
             {
                 _logger.LogWarning("Tier2 suppressed: session is locked.");
@@ -41,22 +42,62 @@ namespace TaskTree.Orchestrator
                 _logger.LogWarning("Tier2 unavailable: no WPF Application context.");
                 return false;
             }
+
+            try
+            {
+                var dispatcher = Application.Current.Dispatcher;
+                return dispatcher.CheckAccess()
+                    ? TryDeliverOnDispatcher(evt)
+                    : dispatcher.Invoke(() => TryDeliverOnDispatcher(evt));
+            }
+            catch (Exception ex) { _logger.LogError(ex, "Tier2 WPF toast failed: {0}: {1}", ex.GetType().Name, ex.Message); return false; }
+        }
+
+        private bool TryDeliverOnDispatcher(ReminderEvent evt)
+        {
+            if (_sessionLock.IsLocked)
+            {
+                _logger.LogWarning("Tier2 suppressed: session is locked.");
+                return false;
+            }
+
             _viewModel ??= new ToastViewModel();
             _window ??= new ReminderToast(_viewModel);
             _viewModel.UpdateContent(evt);
             _closeTimer ??= new DispatcherTimer { Interval = TimeSpan.FromSeconds(10) };
             _closeTimer.Tick -= OnCloseTimerTick;
             _closeTimer.Tick += OnCloseTimerTick;
-            _closeTimer.Stop(); _closeTimer.Start();
-            try { if (!_window.IsVisible) _window.Show(); else _window.Visibility = Visibility.Visible; return true; }
-            catch (Exception ex) { _logger.LogError(ex, "Tier2 WPF toast failed: {0}: {1}", ex.GetType().Name, ex.Message); return false; }
+            _closeTimer.Stop();
+            _closeTimer.Start();
+            if (!_window.IsVisible) _window.Show();
+            else _window.Visibility = Visibility.Visible;
+            return true;
         }
 
         private void OnSessionLockChanged(object? sender, SessionLockChangedEventArgs e)
         {
             if (!e.IsLocked) return;
-            try { _closeTimer?.Stop(); _window?.Hide(); }
+            try
+            {
+                var window = _window;
+                if (window is null) return;
+                if (window.Dispatcher.CheckAccess()) HideOnDispatcher();
+                else window.Dispatcher.BeginInvoke(new Action(HideOnDispatcher));
+            }
             catch (Exception ex) { _logger.LogError(ex, "Tier2 hide-on-lock failed: {0}: {1}", ex.GetType().Name, ex.Message); }
+        }
+
+        private void HideOnDispatcher()
+        {
+            try
+            {
+                _closeTimer?.Stop();
+                _window?.Hide();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Tier2 hide-on-lock dispatcher callback failed: {0}: {1}", ex.GetType().Name, ex.Message);
+            }
         }
 
         private void OnCloseTimerTick(object? sender, EventArgs e)

@@ -137,16 +137,23 @@ namespace TaskTree.Modules.TrayHost
             if (!_initialized || _taskbarIcon is null)
                 throw new InvalidOperationException("TrayHost must be initialized before showing a balloon.");
 
-            _taskbarIcon.ShowNotification(
-                title,
-                message,
-                H.NotifyIcon.Core.NotificationIcon.Info,
-                largeIcon: true,
-                sound: false,
-                respectQuietTime: true,
-                realtime: true,
-                timeout: TimeSpan.FromSeconds(8));
-            RecordAudit("TrayBalloonShown");
+            var taskbarIcon = _taskbarIcon;
+            void ShowOnDispatcher()
+            {
+                taskbarIcon.ShowNotification(
+                    title,
+                    message,
+                    H.NotifyIcon.Core.NotificationIcon.Info,
+                    largeIcon: true,
+                    sound: false,
+                    respectQuietTime: true,
+                    realtime: true,
+                    timeout: TimeSpan.FromSeconds(8));
+                RecordAudit("TrayBalloonShown");
+            }
+
+            if (taskbarIcon.Dispatcher.CheckAccess()) ShowOnDispatcher();
+            else taskbarIcon.Dispatcher.Invoke(ShowOnDispatcher);
         }
 
         private ContextMenu CreateContextMenu()

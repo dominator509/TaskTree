@@ -73,7 +73,7 @@ Use documented command paths when validating scripts. Do not install packages du
 
 ## Current Unknowns / TODOs
 
-- Phase 5C offline validation is green with 356 contract tests plus 7 isolated measurable performance tests; built-in SDK coverage is 76.70% of production source (1,465/1,910 lines). Phase 5D is composition-verified but real interactive E2E remains open. Phase 5E code paths are implemented; packaging preflight is hardened but stops on absent owner-supplied visual assets, while provider/package validation remains open. See the linked phase reports.
+- Phase 5C offline validation is green with 357 contract tests plus 7 isolated measurable performance tests; built-in SDK coverage is 75.68% of production source (1,466/1,937 lines). Phase 5D composition now marshals scheduler/session callbacks onto the WPF dispatcher, but real interactive E2E remains open. Phase 5E code paths are implemented; packaging preflight is hardened but stops on absent owner-supplied visual assets, while provider/package validation remains open. See the linked phase reports.
 - Real WPF/tray E2E, MSIX/WAP build/sign/install, and installed-binary validation require an interactive Windows environment.
 - Q10: owner must provide the real PHI common-name source list before Phase 5F sign-off.
 - Q11: owner must provide or explicitly accept the support-email allowlist default before Phase 5F sign-off.
