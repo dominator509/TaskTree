@@ -27,16 +27,34 @@ namespace TaskTree.Modules.AutoUpdater
             if (manifest.Package is null) throw new ArgumentException("Manifest package is required.", nameof(manifest));
             if (payload.LongLength != manifest.Package.SizeBytes) throw new InvalidOperationException("Payload size does not match manifest.");
             if (!_hashVerifier.VerifySha256(payload, manifest.Package.Sha256)) throw new InvalidOperationException("Payload hash does not match manifest.");
+            ValidateVersionForStaging(manifest.Version);
             Directory.CreateDirectory(_stagingRoot);
             var path = Path.Combine(_stagingRoot, $"TaskTree-{manifest.Version}.msix");
-            await File.WriteAllBytesAsync(path, payload).ConfigureAwait(false);
-            var stagedBytes = await File.ReadAllBytesAsync(path).ConfigureAwait(false);
-            if (!_hashVerifier.VerifySha256(stagedBytes, manifest.Package.Sha256))
+            var temporaryPath = path + "." + Guid.NewGuid().ToString("N") + ".tmp";
+            var promoted = false;
+            try
             {
-                TryDelete(path);
-                throw new InvalidOperationException("Staged file hash verification failed.");
+                await File.WriteAllBytesAsync(temporaryPath, payload).ConfigureAwait(false);
+                File.Move(temporaryPath, path, overwrite: true);
+                promoted = true;
+
+                var stagedBytes = await File.ReadAllBytesAsync(path).ConfigureAwait(false);
+                if (!_hashVerifier.VerifySha256(stagedBytes, manifest.Package.Sha256))
+                    throw new InvalidOperationException("Staged file hash verification failed.");
+            }
+            catch
+            {
+                TryDelete(temporaryPath);
+                if (promoted) TryDelete(path);
+                throw;
             }
             return path;
+        }
+
+        private static void ValidateVersionForStaging(string? version)
+        {
+            if (string.IsNullOrWhiteSpace(version) || version.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0 || version.Contains('/') || version.Contains('\\'))
+                throw new InvalidOperationException("Manifest version is not safe for a staged file name.");
         }
         private static string GetDefaultStagingRoot()
         {

@@ -16,6 +16,7 @@ TaskTree is a Windows-only, HIPAA-aware desktop task/reminder app. It lives in t
 ## Stack
 
 - Language/runtime: C# 12 on .NET 8, `net8.0-windows`.
+- Local SDK used for validation: `C:\Users\domin\.dotnet\dotnet.exe` (8.0.422); it was already available, so no package installation was needed.
 - UI/app: WPF, ModernWpfUI, CommunityToolkit.Mvvm, H.NotifyIcon.Wpf.
 - Tests: MSTest, Moq, `Microsoft.NET.Test.Sdk`.
 - Packaging: MSIX/WAP project under `packaging/`.
@@ -73,7 +74,7 @@ Use documented command paths when validating scripts. Do not install packages du
 
 ## Current Unknowns / TODOs
 
-- Phase 5C offline validation is green with 366 contract tests plus 7 isolated measurable performance tests; built-in SDK coverage is 77.26% of production source (1,651/2,137 lines). Phase 5D composition now resolves the persisted HotkeyManager, validates virtual-key bounds before native registration, serializes session-lock state transitions, unwinds failed orchestrator starts, completes best-effort shutdown, marshals scheduler/session callbacks onto the WPF dispatcher, and enforces audit-chain sequence plus SecureStore key-path invariants, but real interactive E2E remains open. Phase 5E code paths are implemented; packaging preflight is hardened but stops on absent owner-supplied visual assets, while provider/package validation remains open. See the linked phase reports.
+- Phase 5C offline validation is green with 373 non-live contract tests plus 7 isolated measurable performance tests; the last fully converted SDK report measured 77.26% of production source (1,651/2,137 lines), and the current collector rerun produced a fresh ignored artifact. Phase 5D composition now resolves the persisted HotkeyManager, validates virtual-key bounds before native registration, serializes session-lock state transitions, unwinds failed orchestrator starts, completes best-effort shutdown, marshals scheduler/session callbacks onto the WPF dispatcher, and enforces audit-chain sequence plus SecureStore key-path invariants, but real interactive E2E remains open. Phase 5E code paths now atomically promote staged packages, reject unsafe manifest versions, and revalidate staged package integrity at apply time; packaging preflight is hardened but stops on absent owner-supplied visual assets, while provider/package validation remains open. See the linked phase reports.
 - Real WPF/tray E2E, MSIX/WAP build/sign/install, and installed-binary validation require an interactive Windows environment.
 - Q10: owner must provide the real PHI common-name source list before Phase 5F sign-off.
 - Q11: owner must provide or explicitly accept the support-email allowlist default before Phase 5F sign-off.

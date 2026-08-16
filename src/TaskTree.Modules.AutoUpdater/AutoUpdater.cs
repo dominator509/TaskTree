@@ -101,6 +101,11 @@ namespace TaskTree.Modules.AutoUpdater
                     return;
                 }
                 var stagedPath = ResolvePackagePath(manifest);
+                if (!File.Exists(stagedPath))
+                    throw new FileNotFoundException("MSIX package is not staged.", stagedPath);
+                var stagedPayload = await File.ReadAllBytesAsync(stagedPath).ConfigureAwait(false);
+                if (!await VerifyAsync(manifest, stagedPayload).ConfigureAwait(false))
+                    throw new InvalidOperationException("Staged update package failed signature or hash verification.");
                 StateMachine.TransitionTo(UpdaterState.Applying);
                 await MsixPackageInstaller.InstallAsync(stagedPath).ConfigureAwait(false);
                 StateMachine.TransitionTo(UpdaterState.Applied);
