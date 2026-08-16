@@ -45,6 +45,8 @@ namespace TaskTree.Modules.AutoUpdater
                 await using var manifestStream = manifestEntry.Open();
                 var manifest = await JsonSerializer.DeserializeAsync<UpdateManifest>(manifestStream, JsonOptions).ConfigureAwait(false)
                     ?? throw new InvalidOperationException("Offline update manifest could not be parsed.");
+                if (manifest.Package is null)
+                    throw new InvalidOperationException("Offline update manifest is missing package metadata.");
                 if (!_manifestSigner.VerifyManifestSignature(manifest))
                 {
                     _logger.LogWarning("Offline update manifest signature verification failed.");

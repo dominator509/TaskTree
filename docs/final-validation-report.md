@@ -6,9 +6,9 @@
 ## Current Evidence
 
 - Release build: passed with 0 warnings and 0 errors.
-- Offline contract suite: 14 assemblies, 373 passing non-live, non-performance tests, 0 failures, 0 skips. The full solution run reports 384 passed with 1 intentionally skipped Live desktop-metrics test. Performance tests run in a separate lane because their latency thresholds are timing-sensitive under parallel solution execution.
+- Offline contract suite: 14 assemblies, 378 passing non-live, non-performance tests, 0 failures, 0 skips. The full solution run reports 389 passed with 1 intentionally skipped Live desktop-metrics test. Performance tests run in a separate lane because their latency thresholds are timing-sensitive under parallel solution execution.
 - Performance lane: 7 measurable Release cases passed in isolation; the separate Live desktop-metrics case remains intentionally excluded. 10k and 100k audit-chain checks passed; 10 MB SecureStore save/load measured 53.4829/65.6757 ms.
-- Built-in SDK Code Coverage: the current `--collect:"Code Coverage"` rerun passed 373 non-live, non-performance tests and produced a fresh ignored `TestResults/` artifact. The last fully converted production-source report remains 1,651/2,137 lines covered (77.26%); no repo-local Cobertura converter is checked in.
+- Built-in SDK Code Coverage: the current `--collect:"Code Coverage"` rerun passed 378 non-live, non-performance tests and produced a fresh ignored `TestResults/` artifact. The last fully converted production-source report remains 1,651/2,137 lines covered (77.26%); no repo-local Cobertura converter is checked in.
 - Packaging preflight: `packaging/build-msix.ps1` now resolves the installed x64 Windows SDK tools and stages the manifest/assets layout, then fails before restore with the exact missing-assets gate because `packaging/Assets/` is absent.
 - Production source contains no `NotImplementedException` executable stubs for the reviewed Phase 5E paths.
 - Removed the unreferenced reminder-delivery placeholder; DI and runtime tests continue to exercise the implemented `ReminderDeliveryService` router.
@@ -21,6 +21,7 @@
 - Closed two updater integrity gaps without changing interfaces: staged packages now use a temporary-file promotion and reject unsafe manifest versions, while the non-idle apply path revalidates the staged package before invoking MSIX installation.
 - Closed two bug-report queue integrity gaps without changing interfaces: load-modify-save updates are serialized, and concurrent queue flushes are serialized so a report cannot be lost or delivered twice by overlapping local calls.
 - Closed three bug-report delivery integrity gaps without changing interfaces: file-drop writes now promote through a temporary file, limiter window state is synchronized, and the router serializes rate-check, adapter delivery, and send-record operations.
+- Closed four local lifecycle/integrity gaps without changing interfaces: snooze persistence transactions are serialized with notifications raised after release, reminder delivery drains tracked callbacks during stop, logger rotation avoids same-second filename collisions, and updater sentinels/state transitions are serialized while incomplete offline package metadata fails closed.
 - Validation was local-only; no production secrets, signing keys, PHI source lists, or provider endpoints were used.
 
 ## Acceptance Blockers

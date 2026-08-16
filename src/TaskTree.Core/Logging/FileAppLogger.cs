@@ -121,6 +121,12 @@ public sealed class FileAppLogger : IAppLogger
         if (fi.Length < _maxFileSizeBytes) return;
         string suffix = DateTimeOffset.UtcNow.ToString("yyyyMMdd-HHmmss");
         string rotated = Path.Combine(_logDirectory, $"{_logFileName}.{suffix}");
+        var collision = 0;
+        while (File.Exists(rotated))
+        {
+            collision++;
+            rotated = Path.Combine(_logDirectory, $"{_logFileName}.{suffix}-{collision}");
+        }
         File.Move(_logFilePath, rotated, overwrite: false);
     }
 

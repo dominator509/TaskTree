@@ -12,20 +12,32 @@ namespace TaskTree.Modules.AutoUpdater
     public sealed class UpdaterStateMachine
     {
         private readonly IClock _clock;
+        private readonly object _gate = new();
+        private UpdaterState _current = UpdaterState.Idle;
         public event EventHandler<UpdaterStateChangedEventArgs>? StateChanged;
-        public UpdaterState Current { get; private set; } = UpdaterState.Idle;
+        public UpdaterState Current { get { lock (_gate) return _current; } }
         public UpdaterStateMachine(IClock clock) => _clock = clock ?? throw new ArgumentNullException(nameof(clock));
         public void TransitionTo(UpdaterState next)
         {
-            if (next == Current) return;
-            if (!IsValidTransition(Current, next)) throw new InvalidOperationException($"Invalid updater transition: {Current} -> {next}.");
-            var previous = Current; Current = next;
+            UpdaterState previous;
+            lock (_gate)
+            {
+                if (next == _current) return;
+                if (!IsValidTransition(_current, next)) throw new InvalidOperationException($"Invalid updater transition: {_current} -> {next}.");
+                previous = _current;
+                _current = next;
+            }
             StateChanged?.Invoke(this, new UpdaterStateChangedEventArgs(previous, next, _clock.UtcNow));
         }
         public void Reset()
         {
-            if (Current == UpdaterState.Idle) return;
-            var previous = Current; Current = UpdaterState.Idle;
+            UpdaterState previous;
+            lock (_gate)
+            {
+                if (_current == UpdaterState.Idle) return;
+                previous = _current;
+                _current = UpdaterState.Idle;
+            }
             StateChanged?.Invoke(this, new UpdaterStateChangedEventArgs(previous, UpdaterState.Idle, _clock.UtcNow));
         }
         private static bool IsValidTransition(UpdaterState current, UpdaterState next) => (current, next) switch

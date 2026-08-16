@@ -10,6 +10,7 @@
 
 using System;
 using System.IO;
+using System.Linq;
 using System.Text.Json;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using TaskTree.Core.Logging;
@@ -48,6 +49,30 @@ public sealed class FileAppLoggerTests
             Assert.AreEqual("information", root.GetProperty("Level").GetString());
             Assert.AreEqual("synthetic-test-message-msg6", root.GetProperty("Message").GetString());
             Assert.IsTrue(root.TryGetProperty("Timestamp", out _));
+        }
+        finally
+        {
+            if (Directory.Exists(tmpDir)) Directory.Delete(tmpDir, recursive: true);
+        }
+    }
+
+    [TestMethod]
+    public void LogRotation_UsesUniqueNamesWhenRotatingWithinOneSecond()
+    {
+        var tmpDir = Path.Combine(Path.GetTempPath(), "TaskTreeTests_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tmpDir);
+        try
+        {
+            var logger = new FileAppLogger(tmpDir, maxFileSizeBytes: 1);
+            logger.LogInformation("first");
+            logger.LogInformation("second");
+            logger.LogInformation("third");
+
+            var rotated = Directory.GetFiles(tmpDir)
+                .Where(path => !string.Equals(Path.GetFileName(path), "tasktree.log", StringComparison.OrdinalIgnoreCase))
+                .ToArray();
+            Assert.AreEqual(2, rotated.Length);
+            Assert.IsTrue(File.Exists(logger.LogFilePath));
         }
         finally
         {

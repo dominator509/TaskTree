@@ -78,5 +78,54 @@ namespace TaskTree.Orchestrator.Tests
             await service.StopAsync();
             Assert.IsNull(reminderHandler);
         }
+
+        [TestMethod]
+        public async Task StopAsync_WaitsForInFlightDelivery_AndIgnoresCallbacksAfterStop()
+        {
+            var taskId = Guid.NewGuid();
+            var logger = new Mock<IAppLogger>(MockBehavior.Loose);
+            var scheduler = new Mock<IReminderScheduler>(MockBehavior.Strict);
+            var compliance = new Mock<IComplianceCore>(MockBehavior.Strict);
+            var snooze = new Mock<ISnoozeService>(MockBehavior.Strict);
+            var sessionLock = new Mock<ISessionLockService>(MockBehavior.Loose);
+            EventHandler<ReminderEvent>? reminderHandler = null;
+            var lookupStarted = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var lookupRelease = new TaskCompletionSource<SnoozeState?>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            scheduler.SetupAdd(x => x.ReminderDue += It.IsAny<EventHandler<ReminderEvent>>())
+                .Callback<EventHandler<ReminderEvent>>(h => reminderHandler += h);
+            scheduler.SetupRemove(x => x.ReminderDue -= It.IsAny<EventHandler<ReminderEvent>>())
+                .Callback<EventHandler<ReminderEvent>>(h => reminderHandler -= h);
+            snooze.Setup(x => x.GetAsync(taskId))
+                .Callback(() => lookupStarted.TrySetResult(true))
+                .Returns(() => lookupRelease.Task);
+            compliance.Setup(x => x.AuditAsync(It.IsAny<AuditEntry>())).Returns(Task.CompletedTask);
+            sessionLock.SetupGet(x => x.IsLocked).Returns(false);
+
+            var service = new ReminderDeliveryService(
+                scheduler.Object,
+                new ToastTier1Adapter(logger.Object),
+                new ToastTier2Adapter(logger.Object, sessionLock.Object),
+                new ToastTier3Adapter(new Mock<ITrayHost>(MockBehavior.Loose).Object, logger.Object),
+                new FakeClock(),
+                logger.Object,
+                compliance.Object,
+                snooze.Object);
+
+            await service.StartAsync(CancellationToken.None);
+            var reminder = new ReminderEvent { TaskId = taskId, FiredAtUtc = DateTimeOffset.UtcNow };
+            var registeredHandler = reminderHandler!;
+            registeredHandler.Invoke(this, reminder);
+            Assert.AreSame(lookupStarted.Task, await Task.WhenAny(lookupStarted.Task, Task.Delay(TimeSpan.FromSeconds(2))));
+
+            var stopTask = service.StopAsync();
+            Assert.IsFalse(stopTask.IsCompleted);
+            lookupRelease.SetResult(null);
+            await stopTask;
+
+            registeredHandler.Invoke(this, reminder);
+            await Task.Delay(50);
+            snooze.Verify(x => x.GetAsync(taskId), Times.Once);
+        }
     }
 }
