@@ -65,6 +65,19 @@ public sealed class MasterKeyManagerTests
             mgr.KeyFilePath);
     }
 
+    /// <summary>Key file names cannot escape the injected key directory.</summary>
+    [TestMethod]
+    public void Constructor_PathTraversalKeyFileName_Throws()
+    {
+        using var paths = new TestPaths();
+        var logger = new Mock<IAppLogger>();
+
+        Assert.ThrowsException<ArgumentException>(() =>
+            new MasterKeyManager(paths.KeyDir, logger.Object, Path.Combine(paths.KeyDir, "outside.bin")));
+        Assert.ThrowsException<ArgumentException>(() =>
+            new MasterKeyManager(paths.KeyDir, logger.Object, "..\\outside.bin"));
+    }
+
     // ─── Live: real DPAPI tests (executed in Phase 5E) ────────────────────
 
     /// <summary>P1B-AC4 (Live): first GetOrCreateMasterKeyAsync generates and persists a wrapped key file.</summary>

@@ -67,6 +67,11 @@ public sealed class MasterKeyManager : IMasterKeyManager
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(keyDirectory);
         ArgumentException.ThrowIfNullOrWhiteSpace(keyFileName);
+        if (Path.IsPathRooted(keyFileName) ||
+            !string.Equals(Path.GetFileName(keyFileName), keyFileName, StringComparison.Ordinal) ||
+            keyFileName is "." or ".." ||
+            keyFileName.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
+            throw new ArgumentException("Key file name must be a single safe file name.", nameof(keyFileName));
         _keyDirectory = keyDirectory;
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _keyFilePath = Path.Combine(_keyDirectory, keyFileName);

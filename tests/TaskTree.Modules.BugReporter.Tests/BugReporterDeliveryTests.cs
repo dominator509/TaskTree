@@ -68,14 +68,13 @@ namespace TaskTree.Modules.BugReporter.Tests
         }
 
         [TestMethod]
-        public async Task FlushQueueAsync_UnredactedReport_KeepsReport()
+        public async Task EnqueueAsync_UnredactedReport_RejectsPersistence()
         {
             var queue = new BugReportQueue(new InMemorySecureStore());
-            await queue.EnqueueAsync(Report(BugSeverity.Trivial, false));
+            await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                () => queue.EnqueueAsync(Report(BugSeverity.Trivial, false)));
 
-            Assert.AreEqual(0, await Reporter(queue).FlushQueueAsync());
-            Assert.AreEqual(1, await queue.CountAsync());
-            Assert.AreEqual(1, (await queue.GetPendingAsync()).Count);
+            Assert.AreEqual(0, await queue.CountAsync());
         }
     }
 }

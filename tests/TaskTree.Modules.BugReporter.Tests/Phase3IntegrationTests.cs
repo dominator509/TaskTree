@@ -52,7 +52,7 @@ namespace TaskTree.Modules.BugReporter.Tests
         {
             var q = new BugReportQueue(new InMemorySecureStore());
             var submissions = Enumerable.Range(0, 20)
-                .Select(i => q.EnqueueAsync(Report(BugSeverity.Normal, i.ToString("X64"))))
+                .Select(i => q.EnqueueAsync(Report(BugSeverity.Normal, i.ToString("X64"), redacted: true)))
                 .ToArray();
             await Task.WhenAll(submissions);
             Assert.AreEqual(20, await q.CountAsync());

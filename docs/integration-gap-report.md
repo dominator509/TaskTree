@@ -18,6 +18,7 @@
 - Orchestrator startup failure now unwinds attempted dependency starts and event subscriptions; shutdown continues through remaining dependencies before reporting aggregate failures.
 - Reminder delivery now tracks asynchronous due-event callbacks, cancels and drains them during stop, and ignores callbacks that arrive after the service is stopped.
 - BugReporter queue retention is locally wired through the existing secure-store boundary; flushes retry pending reports and leave delivered history for the documented retention window.
+- TaskEngine storage and defensive tree/overdue snapshots preserve nullable `TaskNode.Metadata` values.
 
 ## Not Verified Here
 

@@ -52,6 +52,8 @@ namespace TaskTree.Modules.AutoUpdater
                     _logger.LogWarning("Offline update manifest signature verification failed.");
                     throw new InvalidOperationException("Offline update manifest signature verification failed.");
                 }
+                if (manifest.Package.SizeBytes < 0 || packageEntry.Length != manifest.Package.SizeBytes)
+                    throw new InvalidOperationException("Offline update package size does not match manifest metadata.");
                 await using var packageStream = packageEntry.Open();
                 using var memory = new MemoryStream();
                 await packageStream.CopyToAsync(memory).ConfigureAwait(false);

@@ -36,6 +36,7 @@ namespace TaskTree.Modules.AutoUpdater.Tests
         [TestMethod] public async Task ImportAsync_InvalidManifestJson_Throws(){await Assert.ThrowsExceptionAsync<JsonException>(()=>Svc().ImportAsync(Bundle(validJson:false)));}
         [TestMethod] public async Task ImportAsync_InvalidSignature_Throws(){await Assert.ThrowsExceptionAsync<InvalidOperationException>(()=>Svc().ImportAsync(Bundle()));}
         [TestMethod] public async Task ImportAsync_MissingPackageMetadata_FailsClosed(){var (manifest,signer,payload)=SignedManifest();var broken=manifest with { Package=null! };var ex=await Assert.ThrowsExceptionAsync<InvalidOperationException>(()=>Svc(signer).ImportAsync(Bundle(signedManifest:broken,payloadOverride:payload)));StringAssert.Contains(ex.Message,"package metadata");}
+        [TestMethod] public async Task ImportAsync_SizeMismatch_FailsClosed(){var (manifest,signer,payload)=SignedManifest();var ex=await Assert.ThrowsExceptionAsync<InvalidOperationException>(()=>Svc(signer).ImportAsync(Bundle(signedManifest:manifest,payloadOverride:Encoding.UTF8.GetBytes("abcd"))));StringAssert.Contains(ex.Message,"size");}
         [TestMethod] public async Task ImportAsync_HashMismatch_Throws(){await Assert.ThrowsExceptionAsync<InvalidOperationException>(()=>Svc().ImportAsync(Bundle(hash:new string('B',64))));}
         [TestMethod] public async Task ImportAsync_ValidBundle_StagesPackage()
         {

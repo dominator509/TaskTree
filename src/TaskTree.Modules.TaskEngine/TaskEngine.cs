@@ -97,6 +97,7 @@ public sealed class TaskEngine : ITaskEngine
         Status = src.Status,
         CreatedAt = src.CreatedAt,
         ModifiedAt = src.ModifiedAt,
+        Metadata = src.Metadata,
         // Children is reconstructed at read time; storage form omits nesting.
         Children = new List<TaskNode>(),
     };
@@ -289,6 +290,7 @@ public sealed class TaskEngine : ITaskEngine
                 Status = n.Status,
                 CreatedAt = n.CreatedAt,
                 ModifiedAt = n.ModifiedAt,
+                Metadata = n.Metadata,
                 Children = new List<TaskNode>(),
             });
 
@@ -340,6 +342,7 @@ public sealed class TaskEngine : ITaskEngine
                         Status = n.Status,
                         CreatedAt = n.CreatedAt,
                         ModifiedAt = n.ModifiedAt,
+                        Metadata = n.Metadata,
                         Children = new List<TaskNode>(),
                     });
                 }

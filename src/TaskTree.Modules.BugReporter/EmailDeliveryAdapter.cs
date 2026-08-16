@@ -28,6 +28,8 @@ namespace TaskTree.Modules.BugReporter
             var to = Environment.GetEnvironmentVariable("TASKTREE_SMTP_TO");
             if (string.IsNullOrWhiteSpace(host) || string.IsNullOrWhiteSpace(from) || string.IsNullOrWhiteSpace(to))
                 return new BugReportDeliveryResult(false, Channel, "SMTP configuration is unavailable.");
+            if (string.Equals(Environment.GetEnvironmentVariable("TASKTREE_SMTP_TLS"), "false", StringComparison.OrdinalIgnoreCase))
+                return new BugReportDeliveryResult(false, Channel, "SMTP TLS is required.");
 
             if (!int.TryParse(Environment.GetEnvironmentVariable("TASKTREE_SMTP_PORT"), out var port)) port = 587;
             if (port is < 1 or > 65535)
@@ -42,7 +44,7 @@ namespace TaskTree.Modules.BugReporter
             {
                 using var client = new SmtpClient(host, port)
                 {
-                    EnableSsl = !string.Equals(Environment.GetEnvironmentVariable("TASKTREE_SMTP_TLS"), "false", StringComparison.OrdinalIgnoreCase),
+                    EnableSsl = true,
                     UseDefaultCredentials = false,
                     Timeout = (int)DeliveryTimeout.TotalMilliseconds,
                 };

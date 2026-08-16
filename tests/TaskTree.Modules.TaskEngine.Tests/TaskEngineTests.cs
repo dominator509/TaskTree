@@ -259,6 +259,29 @@ public sealed class TaskEngineTests
         Assert.AreEqual(1, firstChild.Children.Count);
     }
 
+    /// <summary>Phase 2C: metadata survives storage and both read-side clone paths.</summary>
+    [TestMethod]
+    public async Task Metadata_PersistsAcrossTreeAndOverdueSnapshots()
+    {
+        var ctx = CreateEngine();
+        var metadata = new TaskMetadata(
+            "synthetic-patient-text",
+            "synthetic-lab-hint",
+            "synthetic-delivery-hint",
+            RequiresLabReview: true,
+            RequiresDeliveryCoordination: true,
+            LabDueAtUtc: DateTimeOffset.Parse("2026-01-02T00:00:00Z"));
+        var node = NewNode("synthetic-metadata", deadline: DateTimeOffset.Parse("2025-12-01T00:00:00Z"));
+        node.Metadata = metadata;
+
+        var added = await ctx.Engine.AddAsync(node);
+        var tree = await ctx.Engine.GetTreeAsync();
+        var overdue = await ctx.Engine.GetOverdueAsync(ctx.Clock.UtcNow);
+
+        Assert.AreEqual(metadata, tree.Single(n => n.Id == added.Id).Metadata);
+        Assert.AreEqual(metadata, overdue.Single(n => n.Id == added.Id).Metadata);
+    }
+
     /// <summary>Derivation 4: AddAsync writes a TaskAdded audit entry via IComplianceCore.</summary>
     [TestMethod]
     public async Task AddAsync_WritesAuditEntry()

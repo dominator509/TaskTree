@@ -37,7 +37,7 @@ namespace TaskTree.Modules.BugReporter
                 return new BugReportDeliveryResult(false, Channel, "GitHub configuration is unavailable.");
 
             var segments = repository.Split('/', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-            if (segments.Length != 2 || segments.Any(string.IsNullOrWhiteSpace))
+            if (segments.Length != 2 || segments.Any(segment => !IsSafeRepositorySegment(segment)))
                 return new BugReportDeliveryResult(false, Channel, "GitHub repository must use owner/name format.");
 
             try
@@ -72,6 +72,19 @@ namespace TaskTree.Modules.BugReporter
             $"App version: {report.Environment.AppVersion}\n" +
             $"Build: {report.Environment.Build}\n" +
             $"Fingerprint: {report.Fingerprint}";
+
+        private static bool IsSafeRepositorySegment(string segment)
+        {
+            if (string.IsNullOrWhiteSpace(segment)) return false;
+            foreach (var c in segment)
+            {
+                if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
+                    (c >= '0' && c <= '9') || c is '-' or '_' or '.')
+                    continue;
+                return false;
+            }
+            return true;
+        }
 
         private static class HttpClientHolder
         {

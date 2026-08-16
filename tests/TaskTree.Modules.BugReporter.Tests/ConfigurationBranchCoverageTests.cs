@@ -67,7 +67,7 @@ public sealed class ConfigurationBranchCoverageTests
     }
 
     [TestMethod]
-    public async Task Email_LoopbackConnectionFailure_IsReturnedAsFailure()
+    public async Task Email_DisabledTls_FailsClosed()
     {
         using var env = new EnvironmentScope(
             ("TASKTREE_SMTP_HOST", "127.0.0.1"),
@@ -79,7 +79,7 @@ public sealed class ConfigurationBranchCoverageTests
             ("TASKTREE_SMTP_PASSWORD", null));
         var result = await new EmailDeliveryAdapter().DeliverAsync(Report());
         Assert.IsFalse(result.Success);
-        StringAssert.Contains(result.Message, "SMTP delivery failed");
+        StringAssert.Contains(result.Message, "TLS");
     }
 
     [TestMethod]
@@ -95,6 +95,17 @@ public sealed class ConfigurationBranchCoverageTests
     {
         using var env = new EnvironmentScope(
             ("TASKTREE_GITHUB_REPOSITORY", "invalid-repository"),
+            ("TASKTREE_GITHUB_TOKEN", "synthetic-token"));
+        var result = await new GitHubIssueAdapter().DeliverAsync(Report());
+        Assert.IsFalse(result.Success);
+        StringAssert.Contains(result.Message, "owner/name");
+    }
+
+    [TestMethod]
+    public async Task GitHub_UnsafeRepositorySegment_FailsClosed()
+    {
+        using var env = new EnvironmentScope(
+            ("TASKTREE_GITHUB_REPOSITORY", "owner/repo?redirect"),
             ("TASKTREE_GITHUB_TOKEN", "synthetic-token"));
         var result = await new GitHubIssueAdapter().DeliverAsync(Report());
         Assert.IsFalse(result.Success);

@@ -33,6 +33,7 @@ namespace TaskTree.Modules.BugReporter
         public async Task EnqueueAsync(BugReport report)
         {
             if (report is null) throw new ArgumentNullException(nameof(report));
+            if (!report.Redacted) throw new InvalidOperationException("Unredacted bug reports cannot be persisted.");
             await _gate.WaitAsync().ConfigureAwait(false);
             try
             {
