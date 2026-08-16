@@ -16,10 +16,11 @@ namespace TaskTree.Modules.SessionLock
         private readonly IClock _clock;
         private readonly IComplianceCore _compliance;
         private readonly IAppLogger _logger;
+        private readonly SemaphoreSlim _stateGate = new(1, 1);
+        private readonly object _lifecycleGate = new();
         private bool _running;
         private bool _disposed;
         private Timer? _sessionMonitorTimer;
-        private bool? _lastObservedLockState;
 
         private const uint DesktopSwitchDesktop = 0x0100;
         private const int ErrorAccessDenied = 5;
@@ -47,7 +48,6 @@ namespace TaskTree.Modules.SessionLock
             ThrowIfDisposed();
             if (_running) throw new InvalidOperationException("SessionLockService already running.");
             _running = true;
-            _lastObservedLockState = null;
             _sessionMonitorTimer = new Timer(CheckSessionState, null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
             await AuditAsync("SessionLockStarted").ConfigureAwait(false);
         }
@@ -68,11 +68,28 @@ namespace TaskTree.Modules.SessionLock
         private async Task SetLockedAsync(bool locked)
         {
             ThrowIfDisposed();
-            if (IsLocked == locked) return;
-            IsLocked = locked;
-            var action = locked ? "SessionLocked" : "SessionUnlocked";
-            await AuditAsync(action).ConfigureAwait(false);
-            SessionLockChanged?.Invoke(this, new SessionLockChangedEventArgs(locked, _clock.UtcNow));
+            await _stateGate.WaitAsync().ConfigureAwait(false);
+            try
+            {
+                ThrowIfDisposed();
+                if (IsLocked == locked) return;
+
+                IsLocked = locked;
+                var action = locked ? "SessionLocked" : "SessionUnlocked";
+                await AuditAsync(action).ConfigureAwait(false);
+
+                // Disposal may race a timer callback that was already in flight.
+                // Do not publish a post-disposal UI state transition.
+                lock (_lifecycleGate)
+                {
+                    if (!_disposed)
+                        SessionLockChanged?.Invoke(this, new SessionLockChangedEventArgs(locked, _clock.UtcNow));
+                }
+            }
+            finally
+            {
+                _stateGate.Release();
+            }
         }
 
         private void CheckSessionState(object? state)
@@ -94,8 +111,6 @@ namespace TaskTree.Modules.SessionLock
         {
             try
             {
-                if (_lastObservedLockState == locked) return;
-                _lastObservedLockState = locked;
                 await SetLockedAsync(locked).ConfigureAwait(false);
             }
             catch (Exception ex)
@@ -119,16 +134,21 @@ namespace TaskTree.Modules.SessionLock
 
         private void ThrowIfDisposed()
         {
-            if (_disposed) throw new ObjectDisposedException(nameof(SessionLockService));
+            if (Volatile.Read(ref _disposed)) throw new ObjectDisposedException(nameof(SessionLockService));
         }
 
         public void Dispose()
         {
-            if (_disposed) return;
+            lock (_lifecycleGate)
+            {
+                if (_disposed) return;
+                Volatile.Write(ref _disposed, true);
+            }
+
+            _running = false;
             _sessionMonitorTimer?.Dispose();
             _sessionMonitorTimer = null;
             _compliance.AutoLogoffTriggered -= OnAutoLogoffTriggered;
-            _disposed = true;
         }
     }
 }

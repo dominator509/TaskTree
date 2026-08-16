@@ -11,6 +11,7 @@
 - `Orchestrator.StartAsync` now initializes the tray host, starts session locking, starts reminder scheduling and delivery, and starts the 15-minute compliance idle monitor.
 - `ShowTreeRequested` creates and initializes the main WPF view model/window on the application dispatcher.
 - Scheduler-thread reminder delivery and session-lock callbacks now marshal Tier 2 WPF windows, main-window privacy hides, and tray balloons onto their owning WPF dispatcher.
+- Session-lock state transitions are serialized before audit completion and event publication, preserving transition order when lock/unlock observations overlap.
 
 ## Not Verified Here
 
