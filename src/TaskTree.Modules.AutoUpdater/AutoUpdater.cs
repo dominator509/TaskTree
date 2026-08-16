@@ -3,6 +3,7 @@
 // SPEC-DERIVED-PHASE3C  HALT #11/#12 ImportLocalAsync integration
 // Architecture.md Sections 4.7 and 9.1.4-9.1.6.
 // Gap #236/#237: constructor overload changed; offline import not represented in state graph.
+// Gap #238/#243: first-launch sentinel is now wired around MSIX apply; live rollback remains environment-gated.
 
 using System;
 using System.IO;
@@ -24,11 +25,15 @@ namespace TaskTree.Modules.AutoUpdater
         private readonly ManifestSigner _manifestSigner;
         private readonly HashVerifier _hashVerifier;
         private readonly OfflineImportService _offlineImportService;
+        private readonly SentinelService _sentinelService;
+        private readonly Func<string, Task> _installPackageAsync;
         private readonly SemaphoreSlim _operationGate = new(1, 1);
-        public AutoUpdater() : this(new ManifestSigner(), new HashVerifier(), new UpdaterStateMachine(new SystemClockAdapter()), new StagingService(), new VersionEligibilityEvaluator(), null, null) { }
+        public AutoUpdater() : this(new ManifestSigner(), new HashVerifier(), new UpdaterStateMachine(new SystemClockAdapter()), new StagingService(), new VersionEligibilityEvaluator(), null, null, null, null) { }
         public AutoUpdater(ManifestSigner manifestSigner, HashVerifier hashVerifier)
-            : this(manifestSigner, hashVerifier, new UpdaterStateMachine(new SystemClockAdapter()), new StagingService(), new VersionEligibilityEvaluator(), null, null) { }
-        public AutoUpdater(ManifestSigner manifestSigner, HashVerifier hashVerifier, UpdaterStateMachine stateMachine, StagingService stagingService, VersionEligibilityEvaluator eligibilityEvaluator, OfflineImportService? offlineImportService = null, string? stagingRoot = null)
+            : this(manifestSigner, hashVerifier, new UpdaterStateMachine(new SystemClockAdapter()), new StagingService(), new VersionEligibilityEvaluator(), null, null, null, null) { }
+        public AutoUpdater(ManifestSigner manifestSigner, HashVerifier hashVerifier, UpdaterStateMachine stateMachine, StagingService stagingService, VersionEligibilityEvaluator eligibilityEvaluator, OfflineImportService? offlineImportService = null, string? stagingRoot = null, SentinelService? sentinelService = null)
+            : this(manifestSigner, hashVerifier, stateMachine, stagingService, eligibilityEvaluator, offlineImportService, stagingRoot, sentinelService, null) { }
+        internal AutoUpdater(ManifestSigner manifestSigner, HashVerifier hashVerifier, UpdaterStateMachine stateMachine, StagingService stagingService, VersionEligibilityEvaluator eligibilityEvaluator, OfflineImportService? offlineImportService, string? stagingRoot, SentinelService? sentinelService, Func<string, Task>? installPackageAsync)
         {
             _manifestSigner = manifestSigner ?? throw new ArgumentNullException(nameof(manifestSigner));
             _hashVerifier = hashVerifier ?? throw new ArgumentNullException(nameof(hashVerifier));
@@ -37,6 +42,8 @@ namespace TaskTree.Modules.AutoUpdater
             EligibilityEvaluator = eligibilityEvaluator ?? throw new ArgumentNullException(nameof(eligibilityEvaluator));
             _offlineImportService = offlineImportService ?? new OfflineImportService(_manifestSigner, _hashVerifier, StagingService, new NullAppLogger());
             _stagingRoot = string.IsNullOrWhiteSpace(stagingRoot) ? new TaskTreePaths().UpdatesDir : stagingRoot;
+            _sentinelService = sentinelService ?? new SentinelService();
+            _installPackageAsync = installPackageAsync ?? MsixPackageInstaller.InstallAsync;
         }
         public UpdaterStateMachine StateMachine { get; }
         public StagingService StagingService { get; }
@@ -101,7 +108,7 @@ namespace TaskTree.Modules.AutoUpdater
                     StateMachine.TransitionTo(UpdaterState.Verifying);
                     StateMachine.TransitionTo(UpdaterState.Staging);
                     StateMachine.TransitionTo(UpdaterState.Applying);
-                    await MsixPackageInstaller.InstallAsync(packagePath).ConfigureAwait(false);
+                    await InstallWithLaunchSentinelAsync(manifest, packagePath).ConfigureAwait(false);
                     StateMachine.TransitionTo(UpdaterState.Applied);
                     StateMachine.TransitionTo(UpdaterState.Idle);
                     return;
@@ -113,7 +120,7 @@ namespace TaskTree.Modules.AutoUpdater
                 if (!await VerifyAsync(manifest, stagedPayload).ConfigureAwait(false))
                     throw new InvalidOperationException("Staged update package failed signature or hash verification.");
                 StateMachine.TransitionTo(UpdaterState.Applying);
-                await MsixPackageInstaller.InstallAsync(stagedPath).ConfigureAwait(false);
+                await InstallWithLaunchSentinelAsync(manifest, stagedPath).ConfigureAwait(false);
                 StateMachine.TransitionTo(UpdaterState.Applied);
                 StateMachine.TransitionTo(UpdaterState.Idle);
             }
@@ -131,6 +138,22 @@ namespace TaskTree.Modules.AutoUpdater
             }
         }
         public async Task<UpdateManifest> ImportLocalAsync(string filePath) => (await _offlineImportService.ImportAsync(filePath).ConfigureAwait(false)).Manifest;
+
+        private async Task InstallWithLaunchSentinelAsync(UpdateManifest manifest, string packagePath)
+        {
+            await _sentinelService.CreateAsync(manifest).ConfigureAwait(false);
+            try
+            {
+                await _installPackageAsync(packagePath).ConfigureAwait(false);
+            }
+            catch
+            {
+                try { await _sentinelService.ClearAsync().ConfigureAwait(false); }
+                catch { }
+                throw;
+            }
+        }
+
         private bool IsEligibleForApplication(UpdateManifest manifest) =>
             manifest.Channel == Channel &&
             EligibilityEvaluator.IsEligible(manifest, GetCurrentVersion(), GetRolloutBucket());

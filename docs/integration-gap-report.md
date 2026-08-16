@@ -8,6 +8,7 @@
 - The solution builds cleanly with the installed .NET 8 SDK.
 - DI registration resolves the current module graph in the offline integration tests.
 - Application DI now resolves `IAutoUpdater` and `IBugReporter`, with updater staging and bug-report file-drop roots derived from the existing `TaskTreePaths` boundary.
+- Application DI now registers the `SentinelService` and `RollbackService` roots from `TaskTreePaths`; updater apply leaves an atomic sentinel for the next package launch, and app startup records the first launch attempt, clears the sentinel after a successful Orchestrator start, or reinstalls the newest rollback package after a surviving failed attempt.
 - App startup installs the existing BugReporter global crash hook before Orchestrator startup.
 - Orchestrator verifies the compliance audit chain before event subscriptions; an invalid or failed verification is logged and audited as `ChainVerifyFailedAtStartup` without aborting startup.
 - Settings persistence, audit, and change notifications are serialized through the existing service boundary so overlapping UI operations cannot reorder the durable state and observer signal.
@@ -30,4 +31,4 @@
 - A real WPF application dispatcher, tray icon, hotkey message loop, task creation, persistence, reminder escalation, and window hide/show cycle were not executed in this headless validation session.
 - The offline tests do not prove end-to-end behavior against a real interactive Windows desktop profile.
 
-**Status:** Composition and startup-chain failure handling are locally green; real-machine E2E acceptance remains open.
+**Status:** Composition, updater launch-recovery wiring, and startup-chain failure handling are locally green; real-machine E2E acceptance remains open.

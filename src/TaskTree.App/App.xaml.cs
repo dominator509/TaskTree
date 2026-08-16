@@ -8,6 +8,7 @@ using System.Windows;
 using Microsoft.Extensions.DependencyInjection;
 using TaskTree.App.Bootstrap;
 using TaskTree.Core.Abstractions;
+using TaskTree.Modules.AutoUpdater;
 
 namespace TaskTree.App;
 
@@ -23,10 +24,20 @@ public partial class App : Application
         try
         {
             _services = CompositionRoot.BuildServiceProvider();
+            var sentinel = _services.GetRequiredService<SentinelService>();
+            if (await sentinel.ExistsAsync().ConfigureAwait(true) &&
+                !await sentinel.TryMarkLaunchAttemptAsync().ConfigureAwait(true))
+            {
+                await _services.GetRequiredService<RollbackService>().RollbackAsync().ConfigureAwait(true);
+                await sentinel.ClearAsync().ConfigureAwait(true);
+                Shutdown(0);
+                return;
+            }
             _bugReporter = _services.GetRequiredService<IBugReporter>();
             _bugReporter.HookGlobalCrashHandler();
             _orchestrator = _services.GetRequiredService<IOrchestrator>();
             await _orchestrator.StartAsync(CancellationToken.None).ConfigureAwait(true);
+            await sentinel.ClearAsync().ConfigureAwait(true);
         }
         catch (Exception ex)
         {

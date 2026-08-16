@@ -4,6 +4,7 @@
 // SPEC-DERIVED-PHASE2G  HALT #21 SnoozeService registration
 
 using System;
+using System.IO;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using TaskTree.Core.Abstractions;
@@ -34,6 +35,8 @@ namespace TaskTree.App.Bootstrap
             services.AddSingleton<IMasterKeyManager>(sp=>{var paths=sp.GetRequiredService<TaskTreePaths>();paths.EnsureDirectoriesExist();return new MasterKeyManager(paths.KeyDir,sp.GetRequiredService<IAppLogger>(),"master.bin");});
             services.AddSingleton<ISecureStore>(sp=>{var paths=sp.GetRequiredService<TaskTreePaths>();paths.EnsureDirectoriesExist();return new SecureStore(paths.StorageDir,sp.GetRequiredService<IMasterKeyManager>(),sp.GetRequiredService<ICryptoProvider>(),sp.GetRequiredService<IAppLogger>());});
             services.AddSingleton<IComplianceCore>(sp=>{var logger=sp.GetRequiredService<IAppLogger>();var writer=new AuditChainWriter(sp.GetRequiredService<ISecureStore>(),sp.GetRequiredService<IClock>(),logger);return new ComplianceCore(sp.GetRequiredService<ISecureStore>(),sp.GetRequiredService<IClock>(),logger,new PhiRedactor(Array.Empty<string>()),writer);});
+            services.AddSingleton<SentinelService>(sp => new SentinelService(sp.GetRequiredService<TaskTreePaths>().SentinelPath));
+            services.AddSingleton<RollbackService>(sp => new RollbackService(Path.Combine(sp.GetRequiredService<TaskTreePaths>().UpdatesDir, "rollback")));
             services.AddSingleton<IAutoUpdater>(sp=>
             {
                 var paths=sp.GetRequiredService<TaskTreePaths>();
@@ -41,7 +44,7 @@ namespace TaskTree.App.Bootstrap
                 var hash=new HashVerifier();
                 var staging=new StagingService(paths.UpdatesDir,hash);
                 var logger=sp.GetRequiredService<IAppLogger>();
-                return new AutoUpdater(signer,hash,new UpdaterStateMachine(sp.GetRequiredService<IClock>()),staging,new VersionEligibilityEvaluator(),new OfflineImportService(signer,hash,staging,logger),paths.UpdatesDir);
+                return new AutoUpdater(signer,hash,new UpdaterStateMachine(sp.GetRequiredService<IClock>()),staging,new VersionEligibilityEvaluator(),new OfflineImportService(signer,hash,staging,logger),paths.UpdatesDir,sp.GetRequiredService<SentinelService>());
             });
             services.AddSingleton<BugReportQueue>(sp=>new BugReportQueue(sp.GetRequiredService<ISecureStore>()));
             services.AddSingleton<RedactionPipeline>(sp=>new RedactionPipeline(sp.GetRequiredService<IComplianceCore>()));

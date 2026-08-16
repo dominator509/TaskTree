@@ -15,10 +15,15 @@ namespace TaskTree.Modules.AutoUpdater
     public sealed class SentinelService
     {
         private readonly string _sentinelPath;
+        private readonly string _launchAttemptPath;
         private readonly SemaphoreSlim _gate = new(1, 1);
         private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase, PropertyNameCaseInsensitive = true };
         public SentinelService() : this(GetDefaultSentinelPath()) { }
-        public SentinelService(string sentinelPath) => _sentinelPath = string.IsNullOrWhiteSpace(sentinelPath) ? throw new ArgumentException("Sentinel path required.", nameof(sentinelPath)) : sentinelPath;
+        public SentinelService(string sentinelPath)
+        {
+            _sentinelPath = string.IsNullOrWhiteSpace(sentinelPath) ? throw new ArgumentException("Sentinel path required.", nameof(sentinelPath)) : sentinelPath;
+            _launchAttemptPath = _sentinelPath + ".started";
+        }
         public async Task CreateAsync(UpdateManifest manifest)
         {
             if (manifest is null) throw new ArgumentNullException(nameof(manifest));
@@ -30,6 +35,7 @@ namespace TaskTree.Modules.AutoUpdater
                 if (!string.IsNullOrWhiteSpace(dir)) Directory.CreateDirectory(dir);
                 await File.WriteAllTextAsync(temporaryPath, JsonSerializer.Serialize(manifest, JsonOptions)).ConfigureAwait(false);
                 File.Move(temporaryPath, _sentinelPath, overwrite: true);
+                TryDelete(_launchAttemptPath);
             }
             finally
             {
@@ -46,8 +52,32 @@ namespace TaskTree.Modules.AutoUpdater
         public async Task ClearAsync()
         {
             await _gate.WaitAsync().ConfigureAwait(false);
-            try { if (File.Exists(_sentinelPath)) File.Delete(_sentinelPath); }
+            try
+            {
+                TryDelete(_sentinelPath);
+                TryDelete(_launchAttemptPath);
+            }
             finally { _gate.Release(); }
+        }
+        /// <summary>Marks the first launch attempt; false means a prior attempt survived and rollback is required.</summary>
+        public async Task<bool> TryMarkLaunchAttemptAsync()
+        {
+            await _gate.WaitAsync().ConfigureAwait(false);
+            var temporaryPath = _launchAttemptPath + "." + Guid.NewGuid().ToString("N") + ".tmp";
+            try
+            {
+                if (File.Exists(_launchAttemptPath)) return false;
+                var dir = Path.GetDirectoryName(_launchAttemptPath);
+                if (!string.IsNullOrWhiteSpace(dir)) Directory.CreateDirectory(dir);
+                await File.WriteAllTextAsync(temporaryPath, DateTimeOffset.UtcNow.ToString("O")).ConfigureAwait(false);
+                File.Move(temporaryPath, _launchAttemptPath, overwrite: false);
+                return true;
+            }
+            finally
+            {
+                TryDelete(temporaryPath);
+                _gate.Release();
+            }
         }
         public async Task<UpdateManifest?> ReadAsync()
         {

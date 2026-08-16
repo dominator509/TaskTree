@@ -74,6 +74,8 @@ public class ServiceRegistrationsTests
         Assert.IsTrue(registered.Contains(typeof(ISecureStore)));
         Assert.IsTrue(registered.Contains(typeof(IComplianceCore)));
         Assert.IsTrue(registered.Contains(typeof(IAutoUpdater)));
+        Assert.IsTrue(registered.Contains(typeof(SentinelService)));
+        Assert.IsTrue(registered.Contains(typeof(RollbackService)));
         Assert.IsTrue(registered.Contains(typeof(IBugReporter)));
         Assert.IsTrue(registered.Contains(typeof(ITaskEngine)));
         Assert.IsTrue(registered.Contains(typeof(IReminderScheduler)));
@@ -147,6 +149,8 @@ public class ServiceRegistrationsTests
         using var provider = BuildOverriddenServices().BuildServiceProvider(validateScopes: true);
 
         Assert.IsNotNull(provider.GetRequiredService<IAutoUpdater>());
+        Assert.IsNotNull(provider.GetRequiredService<SentinelService>());
+        Assert.IsNotNull(provider.GetRequiredService<RollbackService>());
         Assert.IsNotNull(provider.GetRequiredService<IBugReporter>());
         Assert.IsNotNull(provider.GetRequiredService<DeliveryRouter>());
     }
