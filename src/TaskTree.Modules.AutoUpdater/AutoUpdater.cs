@@ -62,11 +62,7 @@ namespace TaskTree.Modules.AutoUpdater
                 var manifest = await JsonSerializer.DeserializeAsync<UpdateManifest>(stream, JsonOptions).ConfigureAwait(false);
                 if (manifest is null || manifest.Package is null || manifest.Signature is null) return null;
                 if (manifest.Channel != Channel || !_manifestSigner.VerifyManifestSignature(manifest)) return null;
-                var currentVersion = Environment.GetEnvironmentVariable("TASKTREE_UPDATE_CURRENT_VERSION") ?? "0.0.0";
-                var bucket = int.TryParse(Environment.GetEnvironmentVariable("TASKTREE_UPDATE_ROLLOUT_BUCKET"), out var parsedBucket)
-                    ? parsedBucket
-                    : 100;
-                return EligibilityEvaluator.IsEligible(manifest, currentVersion, bucket) ? manifest : null;
+                return IsEligibleForApplication(manifest) ? manifest : null;
             }
             catch
             {
@@ -94,6 +90,9 @@ namespace TaskTree.Modules.AutoUpdater
             await _operationGate.WaitAsync().ConfigureAwait(false);
             try
             {
+                if (!IsEligibleForApplication(manifest))
+                    throw new InvalidOperationException("Update manifest is not eligible for application.");
+
                 if (StateMachine.Current == UpdaterState.Idle)
                 {
                     StateMachine.TransitionTo(UpdaterState.Checking);
@@ -132,6 +131,22 @@ namespace TaskTree.Modules.AutoUpdater
             }
         }
         public async Task<UpdateManifest> ImportLocalAsync(string filePath) => (await _offlineImportService.ImportAsync(filePath).ConfigureAwait(false)).Manifest;
+        private bool IsEligibleForApplication(UpdateManifest manifest) =>
+            manifest.Channel == Channel &&
+            EligibilityEvaluator.IsEligible(manifest, GetCurrentVersion(), GetRolloutBucket());
+
+        private static string GetCurrentVersion()
+        {
+            var configured = Environment.GetEnvironmentVariable("TASKTREE_UPDATE_CURRENT_VERSION");
+            if (!string.IsNullOrWhiteSpace(configured)) return configured;
+            return typeof(AutoUpdater).Assembly.GetName().Version?.ToString() ?? "0.0.0";
+        }
+
+        private static int GetRolloutBucket() =>
+            int.TryParse(Environment.GetEnvironmentVariable("TASKTREE_UPDATE_ROLLOUT_BUCKET"), out var parsedBucket)
+                ? parsedBucket
+                : 100;
+
         private string ResolvePackagePath(UpdateManifest manifest)
         {
             if (!string.IsNullOrWhiteSpace(manifest.Package?.Url) &&

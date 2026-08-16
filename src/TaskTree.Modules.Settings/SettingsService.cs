@@ -2,6 +2,7 @@
 // SettingsService persists non-PHI settings via ISecureStore and audits save/reset events.
 
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using TaskTree.Core.Abstractions;
 using TaskTree.Core.Enums;
@@ -16,6 +17,7 @@ namespace TaskTree.Modules.Settings
         private readonly IComplianceCore _compliance;
         private readonly IClock _clock;
         private readonly IAppLogger _logger;
+        private readonly SemaphoreSlim _gate = new(1, 1);
 
         public event EventHandler? SettingsChanged;
 
@@ -29,6 +31,7 @@ namespace TaskTree.Modules.Settings
 
         public async Task<TaskTreeSettings> GetAsync()
         {
+            await _gate.WaitAsync().ConfigureAwait(false);
             try
             {
                 var settings = await _secureStore.LoadAsync<TaskTreeSettings>(StorageKey).ConfigureAwait(false);
@@ -39,11 +42,13 @@ namespace TaskTree.Modules.Settings
                 _logger.LogError(ex, "SettingsService.GetAsync failed; returning defaults: {0}: {1}", ex.GetType().Name, ex.Message);
                 return TaskTreeSettings.Default;
             }
+            finally { _gate.Release(); }
         }
 
         public async Task SaveAsync(TaskTreeSettings settings)
         {
             Validate(settings);
+            await _gate.WaitAsync().ConfigureAwait(false);
             try
             {
                 await _secureStore.SaveAsync(StorageKey, settings).ConfigureAwait(false);
@@ -54,26 +59,34 @@ namespace TaskTree.Modules.Settings
                     Result = "success",
                     Timestamp = _clock.UtcNow,
                 }).ConfigureAwait(false);
-                SettingsChanged?.Invoke(this, EventArgs.Empty);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "SettingsService.SaveAsync failed: {0}: {1}", ex.GetType().Name, ex.Message);
                 throw;
             }
+            finally { _gate.Release(); }
+
+            SettingsChanged?.Invoke(this, EventArgs.Empty);
         }
 
         public async Task ResetAsync()
         {
             var defaults = TaskTreeSettings.Default;
-            await _secureStore.SaveAsync(StorageKey, defaults).ConfigureAwait(false);
-            await _compliance.AuditAsync(new AuditEntry
+            await _gate.WaitAsync().ConfigureAwait(false);
+            try
             {
-                Module = "SettingsService",
-                Action = "SettingsReset",
-                Result = "success",
-                Timestamp = _clock.UtcNow,
-            }).ConfigureAwait(false);
+                await _secureStore.SaveAsync(StorageKey, defaults).ConfigureAwait(false);
+                await _compliance.AuditAsync(new AuditEntry
+                {
+                    Module = "SettingsService",
+                    Action = "SettingsReset",
+                    Result = "success",
+                    Timestamp = _clock.UtcNow,
+                }).ConfigureAwait(false);
+            }
+            finally { _gate.Release(); }
+
             SettingsChanged?.Invoke(this, EventArgs.Empty);
         }
 

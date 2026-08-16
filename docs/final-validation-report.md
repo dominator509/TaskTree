@@ -6,9 +6,9 @@
 ## Current Evidence
 
 - Release build: passed with 0 warnings and 0 errors.
-- Offline contract suite: 13 applicable assemblies, 380 passing non-live, non-performance tests, 0 failures, 0 skips. The full solution run reports 403 passed and 1 intentionally skipped Live desktop-metrics test (404 total). Performance tests run in a separate lane because their latency thresholds are timing-sensitive under parallel solution execution.
+- Offline contract suite: 13 applicable assemblies, 396 passing non-live, non-performance tests, 0 failures, 0 skips. The full solution run reports 407 passed and 1 intentionally skipped Live desktop-metrics test (408 total). Performance tests run in a separate lane because their latency thresholds are timing-sensitive under parallel solution execution.
 - Performance lane: 7 measurable Release cases passed in isolation; the separate Live desktop-metrics case remains intentionally excluded. 10k and 100k audit-chain checks passed; 10 MB SecureStore save/load measured 53.4829/65.6757 ms.
-- Built-in SDK Code Coverage: the current `--collect:"Code Coverage"` rerun passed 380 non-live, non-performance tests and produced a fresh ignored `TestResults/` artifact. The last fully converted production-source report remains 1,651/2,137 lines covered (77.26%); no repo-local Cobertura converter is checked in.
+- Built-in SDK Code Coverage: the current `--collect:"Code Coverage"` rerun passed 396 non-live, non-performance tests and produced a fresh ignored `TestResults/` artifact. The last fully converted production-source report remains 1,651/2,137 lines covered (77.26%); no repo-local Cobertura converter is checked in.
 - Packaging preflight: `packaging/build-msix.ps1` now resolves the installed x64 Windows SDK tools and stages the manifest/assets layout, then fails before restore with the exact missing-assets gate because `packaging/Assets/` is absent.
 - Production source contains no `NotImplementedException` executable stubs for the reviewed Phase 5E paths.
 - Removed the unreferenced reminder-delivery placeholder; DI and runtime tests continue to exercise the implemented `ReminderDeliveryService` router.
@@ -28,6 +28,9 @@
 - Closed one TaskEngine persistence gap without changing interfaces: nullable `TaskNode.Metadata` now survives storage and defensive tree/overdue snapshots.
 - Closed five fail-closed boundary gaps without changing interfaces: unredacted bug reports cannot enter the encrypted queue, SMTP TLS is mandatory, GitHub repository segments reject unsafe characters, offline imports verify package size metadata, and SecureStore key filenames cannot escape the configured directory.
 - Closed the remaining local application-composition gap without changing public interfaces: App DI now resolves AutoUpdater and BugReporter with TaskTreePaths-backed roots, app startup installs the crash hook, and Orchestrator verifies the audit chain before subscriptions while auditing verification failure and continuing startup.
+- Closed an updater downgrade/channel boundary gap without changing interfaces: `ApplyAsync` reuses the existing version, minimum-version, rollout, and channel eligibility rules before staging or installation.
+- Closed a PHI allowlist encapsulation gap without changing interfaces: `PhiRedactor.AllowedEmails` returns a snapshot rather than its mutable backing set.
+- Closed a settings lifecycle race without changing interfaces: `SettingsService` serializes reads, saves, resets, audits, and post-release change notifications.
 - Validation was local-only; no production secrets, signing keys, PHI source lists, or provider endpoints were used.
 
 ## Acceptance Blockers

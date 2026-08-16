@@ -5,11 +5,13 @@
 - Run marker/static checks when spec-derived files change; run `git diff --check` and final `git diff --name-only` + `git status --short`.
 - Packaging uses documented `packaging/build-msix.ps1`; do not install packages or treat missing certificate/MSIX/provider prerequisites as repo failures.
 - Final acceptance requires evidence for coverage, interactive Windows E2E, MSIX signing/install, provider delivery, owner PHI/support-email inputs, and owner sign-off.
-- Updater invariant: `AutoUpdater.CheckAsync` and `ApplyAsync` share one operation gate around `UpdaterStateMachine`; preserve this serialization when adding updater entrypoints. App DI supplies the existing TaskTreePaths updates root.
+- Updater invariant: `AutoUpdater.CheckAsync` and `ApplyAsync` share one operation gate around `UpdaterStateMachine`; preserve this serialization when adding updater entrypoints. Both check and apply enforce channel/version/minimum-version/rollout eligibility; app DI supplies the existing TaskTreePaths updates root.
 - Compliance invariant: `ComplianceCore` idle-monitor start/replacement, disposal, and timer callback handling share a lifecycle gate; disposed instances reject restart and callbacks must stop before workstation locking.
+- PHI invariant: `PhiRedactor.AllowedEmails` returns a snapshot; callers cannot mutate the backing allowlist through a read-only reference. Keep Q10/Q11 owner inputs explicit.
 - Hotkey invariant: `HotkeyManager` serializes config reads, initialization, replacement, and disposal; if native replacement persistence fails, restore the prior binding before surfacing the failure.
 - Bug-report invariant: SMTP and GitHub delivery calls are bounded to 5 seconds; SMTP TLS is mandatory; GitHub repository owner/name segments must be safe; crash-hook subscription is idempotent at both the hook and reporter layers. App startup installs the global hook before Orchestrator start, and DI supplies the TaskTreePaths bug-report root.
 - Bug-report queue invariant: encrypted retention metadata tracks pending/delivered state; `Redacted=false` reports are rejected before persistence; flush retries pending reports only, successful reports purge after 7 days, failed reports purge after 30 days, and metadata survives queue-instance recreation.
+- Settings invariant: `SettingsService` serializes reads, saves, resets, audit writes, and post-persistence change notifications through one gate; release the gate before invoking observers.
 - Session/scheduler invariant: session lifecycle operations serialize through disposal, and `ReminderScheduler` loops own their `PeriodicTimer` reference rather than rereading a field that stop can clear.
 - TaskEngine invariant: `TaskNode.Metadata` must be copied by storage and defensive tree/overdue snapshot clones.
 - Offline integrity invariant: `OfflineImportService` verifies manifest package size before reading package bytes; `MasterKeyManager` confines key filenames to its configured directory.

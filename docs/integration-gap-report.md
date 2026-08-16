@@ -10,6 +10,7 @@
 - Application DI now resolves `IAutoUpdater` and `IBugReporter`, with updater staging and bug-report file-drop roots derived from the existing `TaskTreePaths` boundary.
 - App startup installs the existing BugReporter global crash hook before Orchestrator startup.
 - Orchestrator verifies the compliance audit chain before event subscriptions; an invalid or failed verification is logged and audited as `ChainVerifyFailedAtStartup` without aborting startup.
+- Settings persistence, audit, and change notifications are serialized through the existing service boundary so overlapping UI operations cannot reorder the durable state and observer signal.
 - The application composition root registers the existing `HotkeyManager` singleton and injects it into `TrayHost`; the runtime path therefore loads `hotkeys/config` before registering the global binding.
 - `Orchestrator.StartAsync` now initializes the tray host, starts session locking, starts reminder scheduling and delivery, and starts the 15-minute compliance idle monitor.
 - `ShowTreeRequested` creates and initializes the main WPF view model/window on the application dispatcher.

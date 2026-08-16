@@ -110,4 +110,19 @@ public sealed class PhiRedactorTests
         Assert.IsFalse(result2.Contains("other@example.com"));
         StringAssert.Contains(result2, PhiRedactor.EmailReplacement);
     }
+
+    /// <summary>Q11 boundary: callers cannot mutate the redaction allowlist through the read-only view.</summary>
+    [TestMethod]
+    public void AllowedEmails_DoesNotExposeMutableBackingSet()
+    {
+        var redactor = new PhiRedactor(new[] { "support@example.com" });
+
+        if (redactor.AllowedEmails is System.Collections.Generic.ICollection<string> exposed && !exposed.IsReadOnly)
+            exposed.Add("other@example.com");
+
+        var result = redactor.Redact("Synthetic: other@example.com");
+
+        StringAssert.Contains(result, PhiRedactor.EmailReplacement);
+        Assert.IsFalse(result.Contains("other@example.com"));
+    }
 }

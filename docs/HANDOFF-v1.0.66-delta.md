@@ -14,10 +14,10 @@
 ## Evidence
 
 - Release build: 0 warnings, 0 errors.
-- Non-live, non-performance suite: 380 passed, 0 failed, 0 skipped.
+- Non-live, non-performance suite: 392 passed, 0 failed, 0 skipped.
 - Full solution: 403 passed, 1 intentional Live desktop-metrics skip, 404 total.
 - Performance lane: 7 passed, 1 intentional Live desktop-metrics skip.
-- SDK coverage collection: 380 passed; fresh artifacts remain ignored.
+- SDK coverage collection: 392 passed; fresh artifacts remain ignored.
 
 ## Open Gates
 

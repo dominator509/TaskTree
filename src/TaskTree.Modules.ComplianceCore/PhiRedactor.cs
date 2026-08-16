@@ -120,7 +120,7 @@ public sealed class PhiRedactor
     /// <summary>
     /// Returns the case-insensitive allowlist used by <see cref="Redact"/>.
     /// </summary>
-    public IReadOnlyCollection<string> AllowedEmails => _allowedEmails;
+    public IReadOnlyCollection<string> AllowedEmails => _allowedEmails.ToArray();
 
     /// <summary>
     /// Returns a copy of <paramref name="text"/> with all PHI patterns redacted

@@ -1,6 +1,8 @@
 // SPEC-DERIVED-PHASE2E  HALT #19 (12 tests for SettingsService)
 
 using System;
+using System.Collections.Concurrent;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
@@ -38,5 +40,78 @@ namespace TaskTree.Modules.Settings.Tests
         [TestMethod] public async Task ResetAsync_SavesDefault(){var (svc,_,_)=Build();await svc.SaveAsync(TaskTreeSettings.Default with { ShowCompletedTasks=true });await svc.ResetAsync();Assert.AreEqual(TaskTreeSettings.Default, await svc.GetAsync());}
         [TestMethod] public async Task ResetAsync_RaisesSettingsChanged(){var (svc,_,_)=Build();var raised=false;svc.SettingsChanged+=(s,e)=>raised=true;await svc.ResetAsync();Assert.IsTrue(raised);}
         [TestMethod] public async Task ResetAsync_AuditsSettingsReset(){var (svc,_,c)=Build();await svc.ResetAsync();c.Verify(x=>x.AuditAsync(It.Is<AuditEntry>(e=>e.Module=="SettingsService"&&e.Action=="SettingsReset"&&e.Result=="success")),Times.Once);}
+
+        [TestMethod]
+        public async Task SaveAndResetAsync_SerializePersistenceAndNotifications()
+        {
+            var store = new BlockingStore();
+            var compliance = new Mock<IComplianceCore>(MockBehavior.Strict);
+            compliance.Setup(c => c.AuditAsync(It.IsAny<AuditEntry>())).Returns(Task.CompletedTask);
+            var logger = new Mock<IAppLogger>(MockBehavior.Loose);
+            var service = new SettingsService(store, compliance.Object, new FakeClock(TestEpoch), logger.Object);
+
+            var saveTask = service.SaveAsync(TaskTreeSettings.Default with { ShowCompletedTasks = true });
+            await store.FirstSaveEntered.Task;
+            var resetTask = service.ResetAsync();
+
+            await Task.Delay(50);
+            Assert.IsFalse(resetTask.IsCompleted);
+            Assert.AreEqual(1, store.MaximumConcurrentSaves);
+
+            store.ReleaseFirstSave.TrySetResult(true);
+            await Task.WhenAll(saveTask, resetTask);
+
+            Assert.AreEqual(1, store.MaximumConcurrentSaves);
+        }
+
+        private sealed class BlockingStore : ISecureStore
+        {
+            private readonly ConcurrentDictionary<string, object> _values = new();
+            private int _activeSaves;
+            private int _maximumConcurrentSaves;
+            private int _firstSave;
+
+            public TaskCompletionSource<bool> FirstSaveEntered { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            public TaskCompletionSource<bool> ReleaseFirstSave { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            public int MaximumConcurrentSaves => Volatile.Read(ref _maximumConcurrentSaves);
+
+            public Task<T?> LoadAsync<T>(string key) where T : class
+                => Task.FromResult(_values.TryGetValue(key, out var value) ? value as T : null);
+
+            public async Task SaveAsync<T>(string key, T value) where T : class
+            {
+                var active = Interlocked.Increment(ref _activeSaves);
+                UpdateMaximum(active);
+                try
+                {
+                    if (Interlocked.Exchange(ref _firstSave, 1) == 0)
+                    {
+                        FirstSaveEntered.TrySetResult(true);
+                        await ReleaseFirstSave.Task.ConfigureAwait(false);
+                    }
+
+                    _values[key] = value;
+                }
+                finally { Interlocked.Decrement(ref _activeSaves); }
+            }
+
+            public Task<bool> ExistsAsync(string key) => Task.FromResult(_values.ContainsKey(key));
+
+            public Task DeleteAsync(string key)
+            {
+                _values.TryRemove(key, out _);
+                return Task.CompletedTask;
+            }
+
+            private void UpdateMaximum(int active)
+            {
+                while (true)
+                {
+                    var current = Volatile.Read(ref _maximumConcurrentSaves);
+                    if (active <= current || Interlocked.CompareExchange(ref _maximumConcurrentSaves, active, current) == current)
+                        return;
+                }
+            }
+        }
     }
 }
