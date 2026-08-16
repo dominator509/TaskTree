@@ -27,6 +27,8 @@
     <ProjectReference Include="..\..\src\TaskTree.Modules.TaskEngine\TaskTree.Modules.TaskEngine.csproj" />
     <ProjectReference Include="..\..\src\TaskTree.Modules.SecureStore\TaskTree.Modules.SecureStore.csproj" />
     <ProjectReference Include="..\..\src\TaskTree.Modules.ComplianceCore\TaskTree.Modules.ComplianceCore.csproj" />
+    <ProjectReference Include="..\..\src\TaskTree.Modules.AutoUpdater\TaskTree.Modules.AutoUpdater.csproj" />
+    <ProjectReference Include="..\..\src\TaskTree.Modules.BugReporter\TaskTree.Modules.BugReporter.csproj" />
     <ProjectReference Include="..\..\src\TaskTree.Modules.ReminderScheduler\TaskTree.Modules.ReminderScheduler.csproj" />
     <ProjectReference Include="..\..\src\TaskTree.Modules.TrayHost\TaskTree.Modules.TrayHost.csproj" />
   </ItemGroup>

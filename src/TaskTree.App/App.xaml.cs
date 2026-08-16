@@ -15,6 +15,7 @@ public partial class App : Application
 {
     private IServiceProvider? _services;
     private IOrchestrator? _orchestrator;
+    private IBugReporter? _bugReporter;
 
     protected override async void OnStartup(StartupEventArgs e)
     {
@@ -22,6 +23,8 @@ public partial class App : Application
         try
         {
             _services = CompositionRoot.BuildServiceProvider();
+            _bugReporter = _services.GetRequiredService<IBugReporter>();
+            _bugReporter.HookGlobalCrashHandler();
             _orchestrator = _services.GetRequiredService<IOrchestrator>();
             await _orchestrator.StartAsync(CancellationToken.None).ConfigureAwait(true);
         }

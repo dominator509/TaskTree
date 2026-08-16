@@ -44,6 +44,7 @@ namespace TaskTree.Orchestrator.Tests
             await orchestrator.StartAsync(CancellationToken.None);
 
             h.TrayHost.Verify(x => x.Initialize(), Times.Once);
+            h.Compliance.Verify(x => x.VerifyChainIntegrityAsync(), Times.Once);
             h.SessionLock.Verify(x => x.StartAsync(It.IsAny<CancellationToken>()), Times.Once);
             h.ReminderScheduler.Verify(x => x.StartAsync(It.IsAny<CancellationToken>()), Times.Once);
             h.ReminderDelivery.Verify(x => x.StartAsync(It.IsAny<CancellationToken>()), Times.Once);
@@ -73,6 +74,22 @@ namespace TaskTree.Orchestrator.Tests
             h.ReminderScheduler.Verify(x => x.StopAsync(), Times.Once);
             h.ReminderDelivery.Verify(x => x.StopAsync(), Times.Once);
             h.TrayHost.Verify(x => x.Dispose(), Times.Once);
+        }
+
+        [TestMethod, TestCategory("Offline")]
+        public async Task StartAsync_WhenAuditChainInvalid_AuditsFailureAndContinues()
+        {
+            var h = Harness.Create();
+            h.Compliance.Setup(x => x.VerifyChainIntegrityAsync()).ReturnsAsync(false);
+            var orchestrator = h.Create();
+
+            await orchestrator.StartAsync(CancellationToken.None);
+            await orchestrator.StopAsync();
+
+            CollectionAssert.AreEqual(
+                new[] { "ChainVerifyFailedAtStartup", "Startup", "Shutdown" },
+                h.AuditEntries.ConvertAll(x => x.Action));
+            h.TrayHost.Verify(x => x.Initialize(), Times.Once);
         }
 
         [TestMethod, TestCategory("Offline")]
@@ -197,6 +214,8 @@ namespace TaskTree.Orchestrator.Tests
                 TrayHost.Setup(x => x.Dispose());
 
                 Compliance.Setup(x => x.StartIdleMonitor(It.IsAny<TimeSpan>()));
+
+                Compliance.Setup(x => x.VerifyChainIntegrityAsync()).ReturnsAsync(true);
 
                 Compliance.Setup(x => x.AuditAsync(It.IsAny<AuditEntry>()))
                     .Callback<AuditEntry>(AuditEntries.Add)

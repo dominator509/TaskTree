@@ -25,10 +25,10 @@ namespace TaskTree.Modules.AutoUpdater
         private readonly HashVerifier _hashVerifier;
         private readonly OfflineImportService _offlineImportService;
         private readonly SemaphoreSlim _operationGate = new(1, 1);
-        public AutoUpdater() : this(new ManifestSigner(), new HashVerifier(), new UpdaterStateMachine(new SystemClockAdapter()), new StagingService(), new VersionEligibilityEvaluator(), null) { }
+        public AutoUpdater() : this(new ManifestSigner(), new HashVerifier(), new UpdaterStateMachine(new SystemClockAdapter()), new StagingService(), new VersionEligibilityEvaluator(), null, null) { }
         public AutoUpdater(ManifestSigner manifestSigner, HashVerifier hashVerifier)
-            : this(manifestSigner, hashVerifier, new UpdaterStateMachine(new SystemClockAdapter()), new StagingService(), new VersionEligibilityEvaluator(), null) { }
-        public AutoUpdater(ManifestSigner manifestSigner, HashVerifier hashVerifier, UpdaterStateMachine stateMachine, StagingService stagingService, VersionEligibilityEvaluator eligibilityEvaluator, OfflineImportService? offlineImportService = null)
+            : this(manifestSigner, hashVerifier, new UpdaterStateMachine(new SystemClockAdapter()), new StagingService(), new VersionEligibilityEvaluator(), null, null) { }
+        public AutoUpdater(ManifestSigner manifestSigner, HashVerifier hashVerifier, UpdaterStateMachine stateMachine, StagingService stagingService, VersionEligibilityEvaluator eligibilityEvaluator, OfflineImportService? offlineImportService = null, string? stagingRoot = null)
         {
             _manifestSigner = manifestSigner ?? throw new ArgumentNullException(nameof(manifestSigner));
             _hashVerifier = hashVerifier ?? throw new ArgumentNullException(nameof(hashVerifier));
@@ -36,12 +36,14 @@ namespace TaskTree.Modules.AutoUpdater
             StagingService = stagingService ?? throw new ArgumentNullException(nameof(stagingService));
             EligibilityEvaluator = eligibilityEvaluator ?? throw new ArgumentNullException(nameof(eligibilityEvaluator));
             _offlineImportService = offlineImportService ?? new OfflineImportService(_manifestSigner, _hashVerifier, StagingService, new NullAppLogger());
+            _stagingRoot = string.IsNullOrWhiteSpace(stagingRoot) ? new TaskTreePaths().UpdatesDir : stagingRoot;
         }
         public UpdaterStateMachine StateMachine { get; }
         public StagingService StagingService { get; }
         public VersionEligibilityEvaluator EligibilityEvaluator { get; }
         public UpdateChannel Channel { get; set; } = UpdateChannel.Stable;
         public bool Enabled { get; set; } = true;
+        private readonly string _stagingRoot;
         public async Task<UpdateManifest?> CheckAsync()
         {
             if (!Enabled) return null;
@@ -130,13 +132,13 @@ namespace TaskTree.Modules.AutoUpdater
             }
         }
         public async Task<UpdateManifest> ImportLocalAsync(string filePath) => (await _offlineImportService.ImportAsync(filePath).ConfigureAwait(false)).Manifest;
-        private static string ResolvePackagePath(UpdateManifest manifest)
+        private string ResolvePackagePath(UpdateManifest manifest)
         {
             if (!string.IsNullOrWhiteSpace(manifest.Package?.Url) &&
                 Uri.TryCreate(manifest.Package.Url, UriKind.Absolute, out var uri) &&
                 uri.IsFile)
                 return uri.LocalPath;
-            return MsixPackageInstaller.GetDefaultStagedPath(manifest.Version);
+            return Path.Combine(_stagingRoot, $"TaskTree-{manifest.Version}.msix");
         }
 
         private async Task<string> EnsurePackageStagedAsync(UpdateManifest manifest)

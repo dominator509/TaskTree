@@ -15,6 +15,8 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using TaskTree.App.Bootstrap;
 using TaskTree.Core.Abstractions;
 using TaskTree.Core.Models;
+using TaskTree.Modules.AutoUpdater;
+using TaskTree.Modules.BugReporter;
 using TaskTree.Modules.TrayHost;
 
 namespace TaskTree.Orchestrator.Tests;
@@ -71,6 +73,8 @@ public class ServiceRegistrationsTests
         Assert.IsTrue(registered.Contains(typeof(IMasterKeyManager)));
         Assert.IsTrue(registered.Contains(typeof(ISecureStore)));
         Assert.IsTrue(registered.Contains(typeof(IComplianceCore)));
+        Assert.IsTrue(registered.Contains(typeof(IAutoUpdater)));
+        Assert.IsTrue(registered.Contains(typeof(IBugReporter)));
         Assert.IsTrue(registered.Contains(typeof(ITaskEngine)));
         Assert.IsTrue(registered.Contains(typeof(IReminderScheduler)));
         Assert.IsTrue(registered.Contains(typeof(ITrayHost)));
@@ -135,5 +139,15 @@ public class ServiceRegistrationsTests
         using var provider = BuildOverriddenServices().BuildServiceProvider(validateScopes: true);
         var manager = provider.GetRequiredService<HotkeyManager>();
         Assert.IsNotNull(manager);
+    }
+
+    [TestMethod, TestCategory("Offline")]
+    public void BuildServiceProvider_ResolvesUpdaterAndBugReporter_WithModuleDependencies()
+    {
+        using var provider = BuildOverriddenServices().BuildServiceProvider(validateScopes: true);
+
+        Assert.IsNotNull(provider.GetRequiredService<IAutoUpdater>());
+        Assert.IsNotNull(provider.GetRequiredService<IBugReporter>());
+        Assert.IsNotNull(provider.GetRequiredService<DeliveryRouter>());
     }
 }

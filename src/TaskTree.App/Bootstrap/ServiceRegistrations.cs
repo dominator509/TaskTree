@@ -12,6 +12,8 @@ using TaskTree.Core.Logging;
 using TaskTree.Core.Models;
 using TaskTree.Core.Security;
 using TaskTree.Modules.ComplianceCore;
+using TaskTree.Modules.AutoUpdater;
+using TaskTree.Modules.BugReporter;
 using TaskTree.Modules.ReminderScheduler;
 using TaskTree.Modules.SecureStore;
 using TaskTree.Modules.SessionLock;
@@ -32,6 +34,24 @@ namespace TaskTree.App.Bootstrap
             services.AddSingleton<IMasterKeyManager>(sp=>{var paths=sp.GetRequiredService<TaskTreePaths>();paths.EnsureDirectoriesExist();return new MasterKeyManager(paths.KeyDir,sp.GetRequiredService<IAppLogger>(),"master.bin");});
             services.AddSingleton<ISecureStore>(sp=>{var paths=sp.GetRequiredService<TaskTreePaths>();paths.EnsureDirectoriesExist();return new SecureStore(paths.StorageDir,sp.GetRequiredService<IMasterKeyManager>(),sp.GetRequiredService<ICryptoProvider>(),sp.GetRequiredService<IAppLogger>());});
             services.AddSingleton<IComplianceCore>(sp=>{var logger=sp.GetRequiredService<IAppLogger>();var writer=new AuditChainWriter(sp.GetRequiredService<ISecureStore>(),sp.GetRequiredService<IClock>(),logger);return new ComplianceCore(sp.GetRequiredService<ISecureStore>(),sp.GetRequiredService<IClock>(),logger,new PhiRedactor(Array.Empty<string>()),writer);});
+            services.AddSingleton<IAutoUpdater>(sp=>
+            {
+                var paths=sp.GetRequiredService<TaskTreePaths>();
+                var signer=new ManifestSigner();
+                var hash=new HashVerifier();
+                var staging=new StagingService(paths.UpdatesDir,hash);
+                var logger=sp.GetRequiredService<IAppLogger>();
+                return new AutoUpdater(signer,hash,new UpdaterStateMachine(sp.GetRequiredService<IClock>()),staging,new VersionEligibilityEvaluator(),new OfflineImportService(signer,hash,staging,logger),paths.UpdatesDir);
+            });
+            services.AddSingleton<BugReportQueue>(sp=>new BugReportQueue(sp.GetRequiredService<ISecureStore>()));
+            services.AddSingleton<RedactionPipeline>(sp=>new RedactionPipeline(sp.GetRequiredService<IComplianceCore>()));
+            services.AddSingleton<CrashCaptureHook>();
+            services.AddSingleton<EmailDeliveryAdapter>();
+            services.AddSingleton<GitHubIssueAdapter>();
+            services.AddSingleton<FileDropAdapter>(sp=>new FileDropAdapter(System.IO.Path.Combine(sp.GetRequiredService<TaskTreePaths>().BugReportsDir,"out")));
+            services.AddSingleton<BugReportRateLimiter>();
+            services.AddSingleton<DeliveryRouter>(sp=>new DeliveryRouter(sp.GetRequiredService<EmailDeliveryAdapter>(),sp.GetRequiredService<GitHubIssueAdapter>(),sp.GetRequiredService<FileDropAdapter>(),sp.GetRequiredService<BugReportRateLimiter>(),sp.GetRequiredService<IClock>()));
+            services.AddSingleton<IBugReporter>(sp=>new BugReporter(sp.GetRequiredService<BugReportQueue>(),sp.GetRequiredService<RedactionPipeline>(),sp.GetRequiredService<CrashCaptureHook>(),sp.GetRequiredService<IClock>(),sp.GetRequiredService<IAppLogger>(),sp.GetRequiredService<DeliveryRouter>()));
             services.AddSingleton<ISnoozeService>(sp=>new SnoozeService(sp.GetRequiredService<ISecureStore>(),sp.GetRequiredService<IComplianceCore>(),sp.GetRequiredService<IClock>(),sp.GetRequiredService<IAppLogger>()));
             services.AddSingleton<ISettingsService>(sp=>new SettingsService(sp.GetRequiredService<ISecureStore>(),sp.GetRequiredService<IComplianceCore>(),sp.GetRequiredService<IClock>(),sp.GetRequiredService<IAppLogger>()));
             services.AddSingleton<ISessionLockService>(sp=>new SessionLockService(sp.GetRequiredService<IClock>(),sp.GetRequiredService<IComplianceCore>(),sp.GetRequiredService<IAppLogger>()));

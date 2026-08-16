@@ -7,6 +7,9 @@
 
 - The solution builds cleanly with the installed .NET 8 SDK.
 - DI registration resolves the current module graph in the offline integration tests.
+- Application DI now resolves `IAutoUpdater` and `IBugReporter`, with updater staging and bug-report file-drop roots derived from the existing `TaskTreePaths` boundary.
+- App startup installs the existing BugReporter global crash hook before Orchestrator startup.
+- Orchestrator verifies the compliance audit chain before event subscriptions; an invalid or failed verification is logged and audited as `ChainVerifyFailedAtStartup` without aborting startup.
 - The application composition root registers the existing `HotkeyManager` singleton and injects it into `TrayHost`; the runtime path therefore loads `hotkeys/config` before registering the global binding.
 - `Orchestrator.StartAsync` now initializes the tray host, starts session locking, starts reminder scheduling and delivery, and starts the 15-minute compliance idle monitor.
 - `ShowTreeRequested` creates and initializes the main WPF view model/window on the application dispatcher.
@@ -25,4 +28,4 @@
 - A real WPF application dispatcher, tray icon, hotkey message loop, task creation, persistence, reminder escalation, and window hide/show cycle were not executed in this headless validation session.
 - The offline tests do not prove end-to-end behavior against a real interactive Windows desktop profile.
 
-**Status:** Composition is locally green; real-machine E2E acceptance remains open.
+**Status:** Composition and startup-chain failure handling are locally green; real-machine E2E acceptance remains open.

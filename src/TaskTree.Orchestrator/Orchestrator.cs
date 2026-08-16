@@ -35,6 +35,8 @@ namespace TaskTree.Orchestrator
                 if (_running) throw new InvalidOperationException("Orchestrator already running.");
                 startupBegan = true;
 
+                await VerifyAuditChainAtStartupAsync().ConfigureAwait(false);
+
                 _showTreeHandler = OnShowTreeRequested;
                 _addTaskHandler = (s, e) => _logger.LogInformation("AddTaskRequested");
                 _exitHandler = (s, e) =>
@@ -129,6 +131,37 @@ namespace TaskTree.Orchestrator
             if (trayInitializationAttempted)
                 TryCleanup("TrayHost startup cleanup", _trayHost.Dispose, failures);
             LogCleanupFailures("startup", failures);
+        }
+
+        private async Task VerifyAuditChainAtStartupAsync()
+        {
+            var chainValid = false;
+            try
+            {
+                chainValid = await _compliance.VerifyChainIntegrityAsync().ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                try { _logger.LogError(ex, "Audit chain verification failed at startup: {0}: {1}", ex.GetType().Name, ex.Message); } catch { }
+            }
+
+            if (chainValid) return;
+
+            try { _logger.LogError(null, "Audit chain verification failed at startup."); } catch { }
+            try
+            {
+                await _compliance.AuditAsync(new AuditEntry
+                {
+                    Module = "Orchestrator",
+                    Action = "ChainVerifyFailedAtStartup",
+                    Result = "failure",
+                    Timestamp = _clock.UtcNow,
+                }).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                try { _logger.LogError(ex, "Unable to audit startup chain verification failure: {0}: {1}", ex.GetType().Name, ex.Message); } catch { }
+            }
         }
 
         private void UnsubscribeHandlers(List<Exception> failures)
