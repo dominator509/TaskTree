@@ -6,9 +6,9 @@
 ## Evidence
 
 - `rtk C:\Users\domin\.dotnet\dotnet.exe build TaskTree.sln -c Release --no-restore`: passed, 0 warnings, 0 errors.
-- `rtk C:\Users\domin\.dotnet\dotnet.exe test TaskTree.sln -c Release --no-build --filter "TestCategory!=Live&TestCategory!=Performance"`: passed, 14 assemblies, 362 tests, 0 failures, 0 skips.
+- `rtk C:\Users\domin\.dotnet\dotnet.exe test TaskTree.sln -c Release --no-build --filter "TestCategory!=Live&TestCategory!=Performance"`: passed, 14 assemblies, 363 tests, 0 failures, 0 skips.
 - `rtk C:\Users\domin\.dotnet\dotnet.exe test tests\TaskTree.Perf.Tests\TaskTree.Perf.Tests.csproj -c Release --no-build --filter "TestCategory=Performance&TestCategory!=Live"`: passed, 7 measurable performance tests, 0 failures, 0 skips.
-- Built-in SDK coverage: `rtk C:\Users\domin\.dotnet\dotnet.exe test TaskTree.sln -c Release --no-build --filter "TestCategory!=Live&TestCategory!=Performance" --collect:"Code Coverage"`: passed, 362 tests, and produced a `.coverage` artifact under ignored `TestResults/`. SDK conversion to Cobertura reports 1,526/2,002 production source lines covered (76.22%), meeting the 75% target after session-state serialization.
+- Built-in SDK coverage: `rtk C:\Users\domin\.dotnet\dotnet.exe test TaskTree.sln -c Release --no-build --filter "TestCategory!=Live&TestCategory!=Performance" --collect:"Code Coverage"`: passed, 363 tests, and produced a `.coverage` artifact under ignored `TestResults/`. SDK conversion to Cobertura reports 1,527/2,003 production source lines covered (76.24%), meeting the 75% target after hotkey input validation and session-state serialization.
 - `git diff --check`: passed.
 - Release Performance category: 7 module-backed tests passed, 1 Live desktop metrics test skipped by design. Captured timings include TaskEngine CRUD 0.3075 ms average, 1000-node fetch 0.3593 ms, ReminderScheduler 1000-task tick 4.5148 ms, SecureStore 10 MB save/load 53.4829/65.6757 ms, AuditChainWriter append 0.0229 ms average, and BugReporter submit+queue 2.2137 ms average.
 - Release Stress category: 100k audit-chain append+verify passed in 1370 ms; the 10 MB SecureStore save/load case passed with 53.4829/65.6757 ms.

@@ -112,6 +112,25 @@ namespace TaskTree.Modules.TrayHost.Tests
         }
 
         [TestMethod, TestCategory("Offline")]
+        public async Task SetConfigAsync_InvalidVirtualKey_ReturnsInvalidConfig_NoAudit()
+        {
+            var (mgr, _, _, compliance, _) = Build();
+            try
+            {
+                var invalidValues = new[] { 0, -1, ushort.MaxValue + 1 };
+                foreach (var virtualKey in invalidValues)
+                {
+                    var result = await mgr.SetConfigAsync(new HotkeyConfig(
+                        Ctrl: true, Alt: false, Shift: false, Win: false, VirtualKey: virtualKey));
+                    Assert.AreEqual(HotkeyManager.HotkeyRegistrationResult.InvalidConfig, result);
+                }
+
+                compliance.Verify(c => c.AuditAsync(It.IsAny<AuditEntry>()), Times.Never);
+            }
+            finally { mgr.Dispose(); }
+        }
+
+        [TestMethod, TestCategory("Offline")]
         public async Task SetConfigAsync_RaisesHotkeyChangedEvent()
         {
             var (mgr, _, _, _, _) = Build();

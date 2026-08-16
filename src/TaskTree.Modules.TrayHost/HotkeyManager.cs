@@ -104,7 +104,8 @@ namespace TaskTree.Modules.TrayHost
         {
             ThrowIfDisposed();
             if (config is null) return HotkeyRegistrationResult.InvalidConfig;
-            if (!config.Ctrl && !config.Alt && !config.Shift && !config.Win)
+            if ((!config.Ctrl && !config.Alt && !config.Shift && !config.Win) ||
+                config.VirtualKey is < 1 or > ushort.MaxValue)
                 return HotkeyRegistrationResult.InvalidConfig;
 
             var oldConfig = await GetCurrentConfigAsync().ConfigureAwait(false);

@@ -136,3 +136,32 @@ All other phases unchanged from v1.0.13.
 **Note for handoff agent:** This is an additive delta over `HANDOFF.md` v1.0.13; all unchanged sections from v1.0.13 (and through it from earlier versions) remain authoritative. To produce a flat v1.0.14, merge these section overrides into v1.0.13 in section order.
 
 A comprehensive flat-merge consolidation of HANDOFF.md v1.0.0 through v1.0.14 will be produced in the next message of this chat session to enable clean resumption in a fresh chat at Phase 1D.
+
+---
+
+## Current Verified State (additive v1.0.56)
+
+This section records the current checkout without deleting the historical v1.0.14 delta above. It supersedes the historical Phase 1D next-action block for current execution; `Roadmap.md`, `Architecture.md`, and the owner gates remain authoritative.
+
+| Area | Current state | Evidence |
+|---|---|---|
+| Phases 0-4 | Implemented in the current source tree; offline contracts and hardening lanes are green. | `TaskTree.sln`, `tests/`, `docs/test-gap-report.md` |
+| Phase 5A | Repository stitches and namespaces resolve. | Release build, derivation registry |
+| Phase 5B | Compile gap closure is green. | Release build: 0 warnings, 0 errors |
+| Phase 5C | Local gate complete: 363 non-live contract tests pass; production coverage is 1,527/2,003 lines (76.24%). | `docs/test-gap-report.md` |
+| Phase 5D | Offline composition is green; persisted hotkeys validate before native registration, and session-lock transitions are serialized. | `docs/integration-gap-report.md`, focused TrayHost/SessionLock tests |
+| Phase 5E | Code paths are implemented, but live Windows/provider/package evidence remains open. | `docs/env-gap-report.md` |
+| Phase 5F | Not complete. Owner sign-off and release archive remain open. | `docs/final-validation-report.md` |
+
+### Current carry-forward blockers
+
+- Real WPF/tray/session/reminder E2E and CredUI validation require an interactive owner-controlled Windows profile.
+- MSIX assets, WAP DesktopBridge targets, signing/install/rollback, and installed-binary launch evidence are unavailable in this host.
+- Live SMTP/GitHub/updater provider checks require owner-controlled configuration and credentials.
+- Q10 PHI common-name sources, Q11 support-email allowlist, production updater signing key, and Phase 5F owner sign-off remain unresolved.
+
+### Additive handoff history
+
+| Version | Date | Change |
+|---|---|---|
+| 1.0.56 | 2026-08-16 | Current checkout state, Phase 5C-5F evidence, and carry-forward external gates recorded; historical Phase 1C content preserved. |
