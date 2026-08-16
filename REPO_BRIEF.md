@@ -39,7 +39,8 @@ Run shell commands through the inherited RTK rule from `AGENTS.md`.
 ```powershell
 rtk dotnet restore TaskTree.sln
 rtk dotnet build TaskTree.sln -c Release
-rtk dotnet test TaskTree.sln -c Release --filter Category!=Live
+rtk dotnet test TaskTree.sln -c Release --filter "TestCategory!=Live&TestCategory!=Performance"
+rtk dotnet test tests/TaskTree.Perf.Tests/TaskTree.Perf.Tests.csproj -c Release --filter "TestCategory=Performance&TestCategory!=Live"
 rtk powershell -NoProfile -File tools/find-spec-derivations.ps1 -Root .
 rtk powershell -NoProfile -File packaging/build-msix.ps1
 ```
@@ -72,8 +73,7 @@ Use documented command paths when validating scripts. Do not install packages du
 
 ## Current Unknowns / TODOs
 
-- Phase 5C non-live validation is green; Phase 5D is composition-verified but real interactive E2E remains open; Phase 5E code paths are implemented but provider/package validation remains open. See the linked phase reports.
-- Coverage evidence is still required for the Roadmap 5C 75% threshold.
+- Phase 5C offline validation is green with 356 contract tests plus 7 isolated measurable performance tests; built-in SDK coverage is 76.18% of production source (1,465/1,923 lines). Phase 5D is composition-verified but real interactive E2E remains open; Phase 5E code paths are implemented but provider/package validation remains open. See the linked phase reports.
 - Real WPF/tray E2E, MSIX/WAP build/sign/install, and installed-binary validation require an interactive Windows environment.
 - Q10: owner must provide the real PHI common-name source list before Phase 5F sign-off.
 - Q11: owner must provide or explicitly accept the support-email allowlist default before Phase 5F sign-off.

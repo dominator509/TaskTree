@@ -38,8 +38,8 @@ Phase 4B now contains module-backed MSTest/Stopwatch measurements for TaskEngine
 Run on 2026-08-16 with the installed .NET 8 SDK:
 
 ```text
-dotnet test tests/TaskTree.Perf.Tests/TaskTree.Perf.Tests.csproj -c Release --no-build --filter TestCategory=Performance
-  7 passed, 1 skipped (live RAM/CPU/tray/UI case)
+dotnet test tests/TaskTree.Perf.Tests/TaskTree.Perf.Tests.csproj -c Release --no-build --filter "TestCategory=Performance&TestCategory!=Live"
+  7 passed, 0 skipped (live RAM/CPU/tray/UI case is a separate excluded gate)
 
 dotnet test tests/TaskTree.Modules.ComplianceCore.Tests/TaskTree.Modules.ComplianceCore.Tests.csproj -c Release --no-build --filter FullyQualifiedName~AuditChain_Append10000_VerifyIntegrity_UnderTarget
   10k append+verify: 107 ms, passed
