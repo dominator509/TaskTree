@@ -52,7 +52,7 @@ namespace TaskTree.Modules.TrayHost
         private bool _hotkeyRegistered;
         private IntPtr _messageOnlyHwnd;
 
-        /// <summary>Raised after a new binding is persisted.</summary>
+        /// <summary>Raised after a new binding is persisted and audited.</summary>
         public event EventHandler<HotkeyChangedEventArgs>? HotkeyChanged;
 
         /// <summary>Creates a hotkey manager.</summary>
@@ -131,6 +131,7 @@ namespace TaskTree.Modules.TrayHost
             try
             {
                 ThrowIfDisposed();
+                var hadPersistedConfig = await _secureStore.ExistsAsync(StorageKey).ConfigureAwait(false);
                 var oldConfig = await LoadCurrentConfigAsync().ConfigureAwait(false);
                 var nativeRegistrationChanged = false;
                 if (_initialized)
@@ -171,7 +172,25 @@ namespace TaskTree.Modules.TrayHost
                         Timestamp = _clock.UtcNow,
                     }).ConfigureAwait(false);
                 }
-                catch (Exception ex) { _logger.LogError(ex, "HotkeyManager audit failed: {0}", ex.Message); }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "HotkeyManager audit failed: {0}", ex.Message);
+                    try
+                    {
+                        if (hadPersistedConfig)
+                            await _secureStore.SaveAsync(StorageKey, oldConfig).ConfigureAwait(false);
+                        else
+                            await _secureStore.DeleteAsync(StorageKey).ConfigureAwait(false);
+                    }
+                    catch (Exception rollbackEx)
+                    {
+                        _logger.LogError(rollbackEx, "HotkeyManager failed to restore persisted configuration after audit failure: {0}", rollbackEx.Message);
+                    }
+
+                    if (nativeRegistrationChanged)
+                        RestoreRegistration(oldConfig);
+                    throw;
+                }
 
                 changed = new HotkeyChangedEventArgs { OldConfig = oldConfig, NewConfig = config };
             }

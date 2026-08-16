@@ -14,6 +14,7 @@
 - Dispatcher safety: scheduler-thread reminder delivery and session-lock callbacks marshal WPF windows and tray notifications onto the owning dispatcher.
 - Reminder lifecycle safety: delivery callbacks are tracked, cancellation-aware, and drained before `StopAsync` returns; callbacks arriving after stop are ignored.
 - Session-state safety: overlapping lock/unlock observations serialize audit and event publication, failed transition audits roll the state back for retry, and timer callbacks do not publish a new UI transition after disposal.
+- Hotkey-state safety: configuration reads, native replacement, persistence, audit, and change publication remain serialized; failed audits restore the prior persisted/native binding or remove a newly created record.
 - Compliance idle-monitor safety: start/replacement/disposal and timer callback handling are serialized; disposed instances reject restart and do not continue into workstation locking.
 - Provider safety: SMTP and GitHub delivery calls are bounded to five seconds per report; timeout failures return redacted status text without credentials.
 - Crash-capture safety: app startup installs the global hook before Orchestrator start; both global hook installation and BugReporter event subscription are idempotent, preventing duplicate queued crash reports.

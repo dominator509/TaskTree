@@ -98,6 +98,53 @@ namespace TaskTree.Modules.TrayHost.Tests
         }
 
         [TestMethod, TestCategory("Offline")]
+        public async Task SetConfigAsync_AuditFailure_RollsBackPersistedConfigAndSuppressesEvent()
+        {
+            var (mgr, _, _, compliance, _) = Build();
+            try
+            {
+                var previous = new HotkeyConfig(Ctrl: true, Alt: false, Shift: false, Win: false, VirtualKey: 0x41);
+                await mgr.SetConfigAsync(previous);
+
+                var auditException = new InvalidOperationException("audit unavailable");
+                compliance.Reset();
+                compliance.Setup(c => c.AuditAsync(It.IsAny<AuditEntry>())).ThrowsAsync(auditException);
+
+                var eventRaised = false;
+                mgr.HotkeyChanged += (_, _) => eventRaised = true;
+                var replacement = new HotkeyConfig(Ctrl: false, Alt: true, Shift: false, Win: false, VirtualKey: 0x42);
+                var thrown = await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                    async () => await mgr.SetConfigAsync(replacement));
+
+                Assert.AreSame(auditException, thrown);
+                Assert.AreEqual(previous, await mgr.GetCurrentConfigAsync());
+                Assert.IsFalse(eventRaised);
+                compliance.Verify(c => c.AuditAsync(It.IsAny<AuditEntry>()), Times.Once);
+            }
+            finally { mgr.Dispose(); }
+        }
+
+        [TestMethod, TestCategory("Offline")]
+        public async Task SetConfigAsync_AuditFailure_WithNoPriorConfig_RemovesNewRecord()
+        {
+            var (mgr, _, store, compliance, _) = Build();
+            try
+            {
+                compliance.Reset();
+                compliance.Setup(c => c.AuditAsync(It.IsAny<AuditEntry>()))
+                    .ThrowsAsync(new InvalidOperationException("audit unavailable"));
+
+                await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                    async () => await mgr.SetConfigAsync(new HotkeyConfig(
+                        Ctrl: true, Alt: false, Shift: false, Win: false, VirtualKey: 0x42)));
+
+                Assert.IsFalse(await store.ExistsAsync("hotkeys/config"));
+                Assert.AreEqual(HotkeyConfig.Default, await mgr.GetCurrentConfigAsync());
+            }
+            finally { mgr.Dispose(); }
+        }
+
+        [TestMethod, TestCategory("Offline")]
         public async Task SetConfigAsync_InvalidConfig_ReturnsInvalidConfig_NoAudit()
         {
             var (mgr, _, _, compliance, _) = Build();

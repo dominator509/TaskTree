@@ -24,7 +24,7 @@
 - Invalid startup audit chains now preserve the validated prefix in an atomically promoted JSON incident export under the local application-data incident root and show a WPF warning when an application dispatcher is available; verification still fails open so startup continues.
 - Session-lock state transitions are serialized before audit completion and event publication, preserving transition order when lock/unlock observations overlap.
 - Compliance idle-monitor start, replacement, disposal, and timer callback handling are serialized so a disposed monitor cannot be restarted or continue into workstation locking.
-- Hotkey configuration reads, initialization, replacement, and disposal are serialized; a persistence failure after native replacement attempts to restore the prior binding.
+- Hotkey configuration reads, initialization, replacement, and disposal are serialized; persistence or audit failure after native replacement attempts to restore the prior persisted/native binding, and failed audits suppress the change event.
 - Session-lock start/stop/dispose operations are serialized, and reminder loop instances retain their own timer reference after stop detaches shared lifecycle fields.
 - SessionLock rolls back its timer/running state when the startup audit fails, and ReminderScheduler cancels, disposes, and drains its loop when startup logging fails so both services permit a clean retry.
 - Orchestrator startup failure now unwinds attempted dependency starts and event subscriptions; shutdown continues through remaining dependencies before reporting aggregate failures.
