@@ -6,6 +6,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using TaskTree.Core.Abstractions;
 using TaskTree.Core.Enums;
@@ -21,26 +22,32 @@ namespace TaskTree.Modules.BugReporter
         private readonly FileDropAdapter _fileDrop;
         private readonly BugReportRateLimiter _rateLimiter;
         private readonly IClock _clock;
+        private readonly SemaphoreSlim _deliveryGate = new(1, 1);
         public DeliveryRouter(EmailDeliveryAdapter email, GitHubIssueAdapter github, FileDropAdapter fileDrop, BugReportRateLimiter rateLimiter, IClock clock)
         { _email=email??throw new ArgumentNullException(nameof(email)); _github=github??throw new ArgumentNullException(nameof(github)); _fileDrop=fileDrop??throw new ArgumentNullException(nameof(fileDrop)); _rateLimiter=rateLimiter??throw new ArgumentNullException(nameof(rateLimiter)); _clock=clock??throw new ArgumentNullException(nameof(clock)); }
         public async Task<BugReportDeliveryResult> DeliverAsync(BugReport report)
         {
             if (report is null) throw new ArgumentNullException(nameof(report));
-            if (!report.Redacted) return new BugReportDeliveryResult(false,"Router","Report is not marked redacted.");
-            var adapters = Routes(report.Severity).ToList();
-            var failures = new List<string>();
-            foreach(var adapter in adapters)
+            await _deliveryGate.WaitAsync().ConfigureAwait(false);
+            try
             {
-                var outbound = adapter.Channel != "FileDrop";
-                if(outbound && !_rateLimiter.CanSend(_clock.UtcNow)){failures.Add($"{adapter.Channel}: rate limited"); continue;}
-                try
+                if (!report.Redacted) return new BugReportDeliveryResult(false,"Router","Report is not marked redacted.");
+                var adapters = Routes(report.Severity).ToList();
+                var failures = new List<string>();
+                foreach(var adapter in adapters)
                 {
-                    var result = await adapter.DeliverAsync(report).ConfigureAwait(false);
-                    if(result.Success){if(outbound)_rateLimiter.RecordSend(_clock.UtcNow);} else failures.Add($"{adapter.Channel}: {result.Message}");
+                    var outbound = adapter.Channel != "FileDrop";
+                    if(outbound && !_rateLimiter.CanSend(_clock.UtcNow)){failures.Add($"{adapter.Channel}: rate limited"); continue;}
+                    try
+                    {
+                        var result = await adapter.DeliverAsync(report).ConfigureAwait(false);
+                        if(result.Success){if(outbound)_rateLimiter.RecordSend(_clock.UtcNow);} else failures.Add($"{adapter.Channel}: {result.Message}");
+                    }
+                    catch(Exception ex){failures.Add($"{adapter.Channel}: {ex.GetType().Name}");}
                 }
-                catch(Exception ex){failures.Add($"{adapter.Channel}: {ex.GetType().Name}");}
+                return failures.Count==0 ? new BugReportDeliveryResult(true,"Router","Delivered") : new BugReportDeliveryResult(false,"Router",string.Join("; ",failures));
             }
-            return failures.Count==0 ? new BugReportDeliveryResult(true,"Router","Delivered") : new BugReportDeliveryResult(false,"Router",string.Join("; ",failures));
+            finally { _deliveryGate.Release(); }
         }
         private IEnumerable<IBugReportDeliveryAdapter> Routes(BugSeverity severity)
         {

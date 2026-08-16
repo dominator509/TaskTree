@@ -12,12 +12,17 @@ namespace TaskTree.Modules.BugReporter
     public sealed class BugReportRateLimiter
     {
         private readonly List<DateTimeOffset> _sent = new();
+        private readonly object _gate = new();
         public bool CanSend(DateTimeOffset nowUtc)
         {
-            Prune(nowUtc);
-            return _sent.Count(x => x > nowUtc.AddMinutes(-1)) < 5 && _sent.Count(x => x.Date == nowUtc.Date) < 50;
+            lock (_gate)
+            {
+                Prune(nowUtc);
+                return IsWithinLimit(nowUtc);
+            }
         }
-        public void RecordSend(DateTimeOffset nowUtc){Prune(nowUtc);_sent.Add(nowUtc);}
+        public void RecordSend(DateTimeOffset nowUtc){lock (_gate){Prune(nowUtc);_sent.Add(nowUtc);}}
+        private bool IsWithinLimit(DateTimeOffset nowUtc) => _sent.Count(x => x > nowUtc.AddMinutes(-1)) < 5 && _sent.Count(x => x.Date == nowUtc.Date) < 50;
         private void Prune(DateTimeOffset nowUtc)=>_sent.RemoveAll(x=>x < nowUtc.AddDays(-1));
     }
 }

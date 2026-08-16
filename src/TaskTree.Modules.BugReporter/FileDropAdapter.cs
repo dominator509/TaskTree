@@ -24,9 +24,20 @@ namespace TaskTree.Modules.BugReporter
             if (!report.Redacted) return new BugReportDeliveryResult(false, Channel, "Report is not marked redacted.");
             Directory.CreateDirectory(_outputRoot);
             var path = Path.Combine(_outputRoot, $"{report.Id}.json");
-            await File.WriteAllTextAsync(path, JsonSerializer.Serialize(report, JsonOptions)).ConfigureAwait(false);
+            var temporaryPath = path + "." + Guid.NewGuid().ToString("N") + ".tmp";
+            try
+            {
+                await File.WriteAllTextAsync(temporaryPath, JsonSerializer.Serialize(report, JsonOptions)).ConfigureAwait(false);
+                File.Move(temporaryPath, path, overwrite: true);
+            }
+            catch
+            {
+                TryDelete(temporaryPath);
+                throw;
+            }
             return new BugReportDeliveryResult(true, Channel, path);
         }
+        private static void TryDelete(string path){try{if(File.Exists(path))File.Delete(path);}catch{} }
         private static string DefaultRoot(){var local=Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);return Path.Combine(local,"TaskTree","bugreports","out");}
     }
 }

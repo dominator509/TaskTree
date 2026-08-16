@@ -9,7 +9,7 @@
 - Compliance/session: `GetLastInputInfo` idle polling, workstation lock request, input-desktop lock detection, audit/event propagation, and disposal.
 - Updater: HTTPS manifest polling, Ed25519 verification, channel/rollout checks, hash-verified download/staging when explicitly enabled, MSIX installation through `Add-AppxPackage`, and last-known-good rollback.
 - Bug reporting: runtime-configured SMTP and GitHub Issues delivery. Missing configuration returns an explicit failure and never logs credentials.
-- Bug-report queue updates use a serialized load-modify-save gate, and overlapping queue flushes are serialized to prevent lost submissions or duplicate local delivery.
+- Bug-report queue updates use a serialized load-modify-save gate, overlapping queue flushes are serialized, file-drop reports promote through temporary files, and limiter/router delivery state is serialized to prevent lost submissions, partial files, duplicate local delivery, or rate-limit races.
 - Reminder fallback: Tier 1 reports unavailable without package identity; Tier 3 uses the live tray balloon path.
 - Dispatcher safety: scheduler-thread reminder delivery and session-lock callbacks marshal WPF windows and tray notifications onto the owning dispatcher.
 - Session-state safety: overlapping lock/unlock observations serialize audit and event publication, and timer callbacks do not publish a new UI transition after disposal.
