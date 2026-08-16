@@ -6,9 +6,9 @@
 ## Evidence
 
 - `rtk C:\Users\domin\.dotnet\dotnet.exe build TaskTree.sln -c Release --no-restore`: passed, 0 warnings, 0 errors.
-- `rtk C:\Users\domin\.dotnet\dotnet.exe test TaskTree.sln -c Release --no-build --no-restore --filter "TestCategory!=Live&TestCategory!=Performance"`: passed, 14 assemblies, 378 tests, 0 failures, 0 skips. The full solution run was 389 passed with 1 intentionally skipped Live desktop-metrics test.
+- `rtk C:\Users\domin\.dotnet\dotnet.exe test TaskTree.sln -c Release --no-build --no-restore --filter "TestCategory!=Live&TestCategory!=Performance"`: passed, 14 assemblies, 380 tests, 0 failures, 0 skips. The full solution run was 391 passed.
 - `rtk C:\Users\domin\.dotnet\dotnet.exe test tests\TaskTree.Perf.Tests\TaskTree.Perf.Tests.csproj -c Release --no-build --filter "TestCategory=Performance&TestCategory!=Live"`: passed, 7 measurable performance tests, 0 failures, 0 skips.
-- Built-in SDK coverage: `rtk C:\Users\domin\.dotnet\dotnet.exe test TaskTree.sln -c Release --no-build --no-restore --filter "TestCategory!=Live&TestCategory!=Performance" --collect:"Code Coverage"`: passed 378 tests and produced a fresh `.coverage` artifact under ignored `TestResults/`. The last fully converted production-source report is 1,651/2,137 lines covered (77.26%); no repo-local Cobertura converter is checked in.
+- Built-in SDK coverage: `rtk C:\Users\domin\.dotnet\dotnet.exe test TaskTree.sln -c Release --no-build --no-restore --filter "TestCategory!=Live&TestCategory!=Performance" --collect:"Code Coverage"`: passed 380 tests and produced a fresh `.coverage` artifact under ignored `TestResults/`. The last fully converted production-source report is 1,651/2,137 lines covered (77.26%); no repo-local Cobertura converter is checked in.
 - `git diff --check`: passed.
 - Release Performance category: 7 module-backed tests passed, 1 Live desktop metrics test skipped by design. Captured timings include TaskEngine CRUD 0.3075 ms average, 1000-node fetch 0.3593 ms, ReminderScheduler 1000-task tick 4.5148 ms, SecureStore 10 MB save/load 53.4829/65.6757 ms, AuditChainWriter append 0.0229 ms average, and BugReporter submit+queue 2.2137 ms average.
 - Release Stress category: 100k audit-chain append+verify passed in 1370 ms; the 10 MB SecureStore save/load case passed with 53.4829/65.6757 ms.
@@ -18,6 +18,7 @@
 - BugReporter concurrency tests cover transactional queue submissions and single-delivery behavior for overlapping flush calls.
 - BugReporter delivery tests cover atomic file-drop replacement, concurrent limiter recording, and focused router/adapter delivery behavior; the focused delivery lane passed 29 tests.
 - Additional hardening tests cover concurrent snooze writes, reminder stop draining and post-stop callback suppression, same-second logger rotation, missing offline package metadata, and atomic sentinel replacement.
+- Additional hardening tests cover updater check serialization around the shared state machine and rejection of idle-monitor restart after compliance disposal.
 
 ## Remaining Gaps
 

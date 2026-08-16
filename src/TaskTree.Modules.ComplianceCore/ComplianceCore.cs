@@ -45,9 +45,11 @@ public sealed class ComplianceCore : IComplianceCore, IDisposable
     private readonly PhiRedactor _redactor;
     private readonly AuditChainWriter _auditWriter;
     private readonly IAppLogger _logger;
+    private readonly object _lifecycleGate = new();
     private Timer? _idleTimer;
     private TimeSpan _idleTimeout;
     private int _idleTriggered;
+    private bool _disposed;
 
     [StructLayout(LayoutKind.Sequential)]
     private struct LastInputInfo
@@ -125,10 +127,17 @@ public sealed class ComplianceCore : IComplianceCore, IDisposable
     public void StartIdleMonitor(TimeSpan timeout)
     {
         if (timeout <= TimeSpan.Zero) throw new ArgumentOutOfRangeException(nameof(timeout));
-        _idleTimeout = timeout;
-        Interlocked.Exchange(ref _idleTriggered, 0);
-        _idleTimer?.Dispose();
-        _idleTimer = new Timer(CheckIdleState, null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
+        Timer? previousTimer;
+        lock (_lifecycleGate)
+        {
+            if (_disposed) throw new ObjectDisposedException(nameof(ComplianceCore));
+            _idleTimeout = timeout;
+            Interlocked.Exchange(ref _idleTriggered, 0);
+            previousTimer = _idleTimer;
+            _idleTimer = new Timer(CheckIdleState, null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
+        }
+
+        previousTimer?.Dispose();
     }
 
     /// <inheritdoc />
@@ -136,12 +145,19 @@ public sealed class ComplianceCore : IComplianceCore, IDisposable
 
     private void CheckIdleState(object? state)
     {
+        TimeSpan idleTimeout;
+        lock (_lifecycleGate)
+        {
+            if (_disposed || _idleTimer is null) return;
+            idleTimeout = _idleTimeout;
+        }
+
         var info = new LastInputInfo { Size = (uint)Marshal.SizeOf<LastInputInfo>() };
         if (!GetLastInputInfo(ref info)) return;
 
         var idleMilliseconds = unchecked((uint)Environment.TickCount - info.TickCount);
         var idle = TimeSpan.FromMilliseconds(idleMilliseconds);
-        if (idle < _idleTimeout)
+        if (idle < idleTimeout)
         {
             Interlocked.Exchange(ref _idleTriggered, 0);
             return;
@@ -150,9 +166,14 @@ public sealed class ComplianceCore : IComplianceCore, IDisposable
 
         try
         {
-            AutoLogoffTriggered?.Invoke(this, EventArgs.Empty);
-            if (!LockWorkStation())
-                _logger.LogWarning("LockWorkStation failed with Win32 error {0}.", Marshal.GetLastWin32Error());
+            lock (_lifecycleGate)
+            {
+                if (_disposed || _idleTimer is null) return;
+                AutoLogoffTriggered?.Invoke(this, EventArgs.Empty);
+                if (_disposed || _idleTimer is null) return;
+                if (!LockWorkStation())
+                    _logger.LogWarning("LockWorkStation failed with Win32 error {0}.", Marshal.GetLastWin32Error());
+            }
         }
         catch (Exception ex)
         {
@@ -163,7 +184,15 @@ public sealed class ComplianceCore : IComplianceCore, IDisposable
     /// <summary>Stops the idle monitor and releases its timer.</summary>
     public void Dispose()
     {
-        _idleTimer?.Dispose();
-        _idleTimer = null;
+        Timer? timer;
+        lock (_lifecycleGate)
+        {
+            if (_disposed) return;
+            _disposed = true;
+            timer = _idleTimer;
+            _idleTimer = null;
+        }
+
+        timer?.Dispose();
     }
 }

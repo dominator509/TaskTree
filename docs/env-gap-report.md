@@ -7,13 +7,14 @@
 
 - Tray host: `H.NotifyIcon.Wpf`, context menu, balloon delivery, message-only hotkey window, persisted `HotkeyManager` configuration, and `RegisterHotKey`/`UnregisterHotKey` wrappers.
 - Compliance/session: `GetLastInputInfo` idle polling, workstation lock request, input-desktop lock detection, audit/event propagation, and disposal.
-- Updater: HTTPS manifest polling, Ed25519 verification, channel/rollout checks, hash-verified download/staging when explicitly enabled, MSIX installation through `Add-AppxPackage`, last-known-good rollback, atomic first-launch sentinel promotion, and synchronized state transitions. Offline import rejects missing package metadata before hash processing.
+- Updater: HTTPS manifest polling, Ed25519 verification, channel/rollout checks, hash-verified download/staging when explicitly enabled, MSIX installation through `Add-AppxPackage`, last-known-good rollback, atomic first-launch sentinel promotion, serialized check/apply operations, and synchronized state transitions. Offline import rejects missing package metadata before hash processing.
 - Bug reporting: runtime-configured SMTP and GitHub Issues delivery. Missing configuration returns an explicit failure and never logs credentials.
 - Bug-report queue updates use a serialized load-modify-save gate, overlapping queue flushes are serialized, file-drop reports promote through temporary files, and limiter/router delivery state is serialized to prevent lost submissions, partial files, duplicate local delivery, or rate-limit races.
 - Reminder fallback: Tier 1 reports unavailable without package identity; Tier 3 uses the live tray balloon path.
 - Dispatcher safety: scheduler-thread reminder delivery and session-lock callbacks marshal WPF windows and tray notifications onto the owning dispatcher.
 - Reminder lifecycle safety: delivery callbacks are tracked, cancellation-aware, and drained before `StopAsync` returns; callbacks arriving after stop are ignored.
 - Session-state safety: overlapping lock/unlock observations serialize audit and event publication, and timer callbacks do not publish a new UI transition after disposal.
+- Compliance idle-monitor safety: start/replacement/disposal and timer callback handling are serialized; disposed instances reject restart and do not continue into workstation locking.
 - Packaging preflight: `build-msix.ps1` resolves the installed Windows SDK tools by architecture, uses the repo-local .NET 8 executable when present, stages `Package.appxmanifest` beside the published output, and fails closed before restore when required assets are absent.
 
 ## Open Environment Gates

@@ -159,4 +159,15 @@ public sealed class ComplianceCoreTests
         ctx.Core.StartIdleMonitor(TimeSpan.FromMinutes(15));
         ctx.Core.StartIdleMonitor(TimeSpan.FromMinutes(15));
     }
+
+    /// <summary>Disposal prevents the idle monitor from being restarted.</summary>
+    [TestMethod]
+    public void StartIdleMonitor_AfterDispose_ThrowsObjectDisposedException()
+    {
+        var ctx = CreateContext();
+        ctx.Core.Dispose();
+
+        Assert.ThrowsException<ObjectDisposedException>(
+            () => ctx.Core.StartIdleMonitor(TimeSpan.FromMinutes(15)));
+    }
 }

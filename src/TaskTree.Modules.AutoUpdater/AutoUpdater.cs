@@ -8,6 +8,7 @@ using System;
 using System.IO;
 using System.Net.Http;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 using TaskTree.Core.Abstractions;
 using TaskTree.Core.Enums;
@@ -23,6 +24,7 @@ namespace TaskTree.Modules.AutoUpdater
         private readonly ManifestSigner _manifestSigner;
         private readonly HashVerifier _hashVerifier;
         private readonly OfflineImportService _offlineImportService;
+        private readonly SemaphoreSlim _operationGate = new(1, 1);
         public AutoUpdater() : this(new ManifestSigner(), new HashVerifier(), new UpdaterStateMachine(new SystemClockAdapter()), new StagingService(), new VersionEligibilityEvaluator(), null) { }
         public AutoUpdater(ManifestSigner manifestSigner, HashVerifier hashVerifier)
             : this(manifestSigner, hashVerifier, new UpdaterStateMachine(new SystemClockAdapter()), new StagingService(), new VersionEligibilityEvaluator(), null) { }
@@ -48,9 +50,10 @@ namespace TaskTree.Modules.AutoUpdater
             if (!Uri.TryCreate(endpoint, UriKind.Absolute, out var uri) || uri.Scheme != Uri.UriSchemeHttps)
                 return null;
 
-            StateMachine.TransitionTo(UpdaterState.Checking);
+            await _operationGate.WaitAsync().ConfigureAwait(false);
             try
             {
+                StateMachine.TransitionTo(UpdaterState.Checking);
                 using var response = await HttpClient.GetAsync(uri).ConfigureAwait(false);
                 if (!response.IsSuccessStatusCode) return null;
                 await using var stream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
@@ -71,6 +74,7 @@ namespace TaskTree.Modules.AutoUpdater
             {
                 if (StateMachine.Current == UpdaterState.Checking)
                     StateMachine.TransitionTo(UpdaterState.Idle);
+                _operationGate.Release();
             }
         }
         public Task<bool> VerifyAsync(UpdateManifest manifest, byte[] payload)
@@ -85,6 +89,7 @@ namespace TaskTree.Modules.AutoUpdater
         public async Task ApplyAsync(UpdateManifest manifest)
         {
             if (manifest is null) throw new ArgumentNullException(nameof(manifest));
+            await _operationGate.WaitAsync().ConfigureAwait(false);
             try
             {
                 if (StateMachine.Current == UpdaterState.Idle)
@@ -118,6 +123,10 @@ namespace TaskTree.Modules.AutoUpdater
                 if (StateMachine.Current == UpdaterState.Failed)
                     StateMachine.Reset();
                 throw;
+            }
+            finally
+            {
+                _operationGate.Release();
             }
         }
         public async Task<UpdateManifest> ImportLocalAsync(string filePath) => (await _offlineImportService.ImportAsync(filePath).ConfigureAwait(false)).Manifest;
