@@ -10,6 +10,7 @@
 //    Shared helper usage is part of the Phase 5A/5B TestSupport migration.
 // ─────────────────────────────────────────────────────────────────────────────
 using System;
+using System.Security.Principal;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
@@ -91,5 +92,20 @@ public sealed class AuditChainWriterTests
         Assert.AreEqual(1, chain.Count);
         Assert.AreEqual(HashChain.GenesisPrevHash, chain[0].PrevHash);
         Assert.AreEqual(string.Empty, chain[0].PrevHash);  // explicit equality with documented sentinel
+    }
+
+    /// <summary>Empty production actor values resolve to the current Windows user SID.</summary>
+    [TestMethod]
+    public async Task AppendAsync_EmptyActor_UsesCurrentWindowsUserSid()
+    {
+        var writer = CreateWriter();
+        var entry = NewEntry("synthetic-actor-resolution", callerSuppliedSeq: 0);
+        entry.Actor = string.Empty;
+
+        await writer.AppendAsync(entry);
+
+        using var identity = WindowsIdentity.GetCurrent();
+        Assert.IsNotNull(identity.User);
+        Assert.AreEqual(identity.User!.Value, entry.Actor);
     }
 }

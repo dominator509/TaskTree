@@ -11,6 +11,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Principal;
 using System.Threading;
 using System.Threading.Tasks;
 using TaskTree.Core.Abstractions;
@@ -99,6 +100,13 @@ public sealed class AuditChainWriter
         {
             var dto = await _store.LoadAsync<AuditChainDto>(StorageKey).ConfigureAwait(false)
                       ?? new AuditChainDto();
+
+            if (string.IsNullOrWhiteSpace(entry.Actor))
+            {
+                using var identity = WindowsIdentity.GetCurrent();
+                entry.Actor = identity.User?.Value
+                    ?? throw new InvalidOperationException("Current Windows user SID is unavailable.");
+            }
 
             // Derivation 4: writer-assigned monotonic Seq (overwrites any caller value).
             long nextSeq = dto.Entries.Count == 0 ? 1L : dto.Entries[^1].Seq + 1;

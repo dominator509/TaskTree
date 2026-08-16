@@ -132,7 +132,7 @@ Known gaps:
 - #291: Real interactive startup audit-chain verification and warning validation.
 - #293: Real desktop breach/tamper warning review and last-known-good export workflow validation.
 
-Current local delta (2026-08-16): Orchestrator verifies the chain before subscriptions, records `ChainVerifyFailedAtStartup`, continues startup, and atomically exports the validated prefix to the local incident root. When a WPF application dispatcher exists, it also shows a user-visible integrity warning. Focused offline tests cover prefix selection and atomic JSON export; interactive warning presentation, destination review, and Phase 5F owner acceptance remain open.
+Current local delta (2026-08-16): Orchestrator verifies the chain before subscriptions, records `ChainVerifyFailedAtStartup`, continues startup, and atomically exports the validated prefix to the local incident root. When a WPF application dispatcher exists, it also shows a user-visible integrity warning. The central audit writer resolves empty actors to the current Windows user SID, while explicit synthetic actors remain available to tests. Focused offline tests cover prefix selection, atomic JSON export, and actor resolution; interactive warning presentation, destination review, and Phase 5F owner acceptance remain open.
 
 ## 11. Compliance Mode Behavior
 

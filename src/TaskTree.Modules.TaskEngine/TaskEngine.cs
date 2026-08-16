@@ -107,7 +107,9 @@ public sealed class TaskEngine : ITaskEngine
         var entry = new AuditEntry
         {
             Timestamp = _clock.UtcNow,
-            Actor = Environment.UserName,
+            // AuditChainWriter supplies the current Windows user SID when the
+            // caller does not provide an explicit actor.
+            Actor = string.Empty,
             Module = nameof(TaskEngine),
             Action = action,
             TargetId = targetId,
