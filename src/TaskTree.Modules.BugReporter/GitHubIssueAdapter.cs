@@ -75,7 +75,7 @@ namespace TaskTree.Modules.BugReporter
 
         private static class HttpClientHolder
         {
-            internal static readonly HttpClient Instance = new();
+            internal static readonly HttpClient Instance = new() { Timeout = TimeSpan.FromSeconds(5) };
         }
     }
 }

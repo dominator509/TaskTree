@@ -7,3 +7,6 @@
 - Final acceptance requires evidence for coverage, interactive Windows E2E, MSIX signing/install, provider delivery, owner PHI/support-email inputs, and owner sign-off.
 - Updater invariant: `AutoUpdater.CheckAsync` and `ApplyAsync` share one operation gate around `UpdaterStateMachine`; preserve this serialization when adding updater entrypoints.
 - Compliance invariant: `ComplianceCore` idle-monitor start/replacement, disposal, and timer callback handling share a lifecycle gate; disposed instances reject restart and callbacks must stop before workstation locking.
+- Hotkey invariant: `HotkeyManager` serializes config reads, initialization, replacement, and disposal; if native replacement persistence fails, restore the prior binding before surfacing the failure.
+- Bug-report invariant: SMTP and GitHub delivery calls are bounded to 5 seconds; crash-hook subscription is idempotent at both the hook and reporter layers.
+- Session/scheduler invariant: session lifecycle operations serialize through disposal, and `ReminderScheduler` loops own their `PeriodicTimer` reference rather than rereading a field that stop can clear.

@@ -77,6 +77,32 @@ namespace TaskTree.Modules.SessionLock.Tests
 
             Assert.IsFalse(raised);
         }
+
+        [TestMethod]
+        public async Task Dispose_DuringStartAudit_WaitsForLifecycleOperation()
+        {
+            var comp = new Mock<IComplianceCore>(MockBehavior.Strict);
+            var auditStarted = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var audit = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
+            comp.Setup(c => c.AuditAsync(It.Is<AuditEntry>(e => e.Action == "SessionLockStarted")))
+                .Callback<AuditEntry>(_ => auditStarted.TrySetResult(true))
+                .Returns(audit.Task);
+
+            var svc = new SessionLockService(new FakeClock(), comp.Object, new Mock<IAppLogger>().Object);
+            var starting = svc.StartAsync(CancellationToken.None);
+            await auditStarted.Task;
+
+            var disposing = Task.Run(svc.Dispose);
+            await Task.Delay(25);
+            Assert.IsFalse(disposing.IsCompleted);
+
+            audit.TrySetResult(null);
+            await starting;
+            await disposing;
+
+            await Assert.ThrowsExceptionAsync<ObjectDisposedException>(
+                () => svc.StopAsync());
+        }
         [TestMethod] public void Dispose_CalledTwice_DoesNotThrow(){var(svc,_)=Build();svc.Dispose();svc.Dispose();}
         [TestMethod] public async Task Dispose_ThenStartAsync_ThrowsObjectDisposedException(){var(svc,_)=Build();svc.Dispose();await Assert.ThrowsExceptionAsync<ObjectDisposedException>(()=>svc.StartAsync(CancellationToken.None));}
     }

@@ -6,6 +6,7 @@
 using System;
 using System.Net;
 using System.Net.Mail;
+using System.Threading;
 using System.Threading.Tasks;
 using TaskTree.Core.Models;
 
@@ -14,6 +15,7 @@ namespace TaskTree.Modules.BugReporter
     /// <summary>SMTP delivery adapter with runtime-only configuration.</summary>
     public sealed class EmailDeliveryAdapter : IBugReportDeliveryAdapter
     {
+        private static readonly TimeSpan DeliveryTimeout = TimeSpan.FromSeconds(5);
         public string Channel => "Email";
         public async Task<BugReportDeliveryResult> DeliverAsync(BugReport report)
         {
@@ -42,6 +44,7 @@ namespace TaskTree.Modules.BugReporter
                 {
                     EnableSsl = !string.Equals(Environment.GetEnvironmentVariable("TASKTREE_SMTP_TLS"), "false", StringComparison.OrdinalIgnoreCase),
                     UseDefaultCredentials = false,
+                    Timeout = (int)DeliveryTimeout.TotalMilliseconds,
                 };
                 if (!string.IsNullOrWhiteSpace(username))
                     client.Credentials = new NetworkCredential(username, password);
@@ -52,8 +55,13 @@ namespace TaskTree.Modules.BugReporter
                     Body = FormatBody(report),
                     IsBodyHtml = false,
                 };
-                await client.SendMailAsync(message).ConfigureAwait(false);
+                using var timeout = new CancellationTokenSource(DeliveryTimeout);
+                await client.SendMailAsync(message, timeout.Token).ConfigureAwait(false);
                 return new BugReportDeliveryResult(true, Channel, "Delivered via SMTP.");
+            }
+            catch (OperationCanceledException)
+            {
+                return new BugReportDeliveryResult(false, Channel, "SMTP delivery timed out.");
             }
             catch (Exception ex)
             {

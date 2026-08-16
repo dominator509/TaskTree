@@ -17,6 +17,7 @@ namespace TaskTree.Modules.SessionLock
         private readonly IComplianceCore _compliance;
         private readonly IAppLogger _logger;
         private readonly SemaphoreSlim _stateGate = new(1, 1);
+        private readonly SemaphoreSlim _lifecycleOperationGate = new(1, 1);
         private readonly object _lifecycleGate = new();
         private bool _running;
         private bool _disposed;
@@ -45,21 +46,47 @@ namespace TaskTree.Modules.SessionLock
 
         public async Task StartAsync(CancellationToken ct)
         {
-            ThrowIfDisposed();
-            if (_running) throw new InvalidOperationException("SessionLockService already running.");
-            _running = true;
-            _sessionMonitorTimer = new Timer(CheckSessionState, null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
-            await AuditAsync("SessionLockStarted").ConfigureAwait(false);
+            await _lifecycleOperationGate.WaitAsync(ct).ConfigureAwait(false);
+            try
+            {
+                lock (_lifecycleGate)
+                {
+                    ThrowIfDisposed();
+                    if (_running) throw new InvalidOperationException("SessionLockService already running.");
+                    _running = true;
+                    _sessionMonitorTimer = new Timer(CheckSessionState, null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
+                }
+
+                await AuditAsync("SessionLockStarted").ConfigureAwait(false);
+            }
+            finally
+            {
+                _lifecycleOperationGate.Release();
+            }
         }
 
         public async Task StopAsync()
         {
-            ThrowIfDisposed();
-            if (!_running) return;
-            _sessionMonitorTimer?.Dispose();
-            _sessionMonitorTimer = null;
-            _running = false;
-            await AuditAsync("SessionLockStopped").ConfigureAwait(false);
+            await _lifecycleOperationGate.WaitAsync().ConfigureAwait(false);
+            try
+            {
+                Timer? timer;
+                lock (_lifecycleGate)
+                {
+                    ThrowIfDisposed();
+                    if (!_running) return;
+                    timer = _sessionMonitorTimer;
+                    _sessionMonitorTimer = null;
+                    _running = false;
+                }
+
+                timer?.Dispose();
+                await AuditAsync("SessionLockStopped").ConfigureAwait(false);
+            }
+            finally
+            {
+                _lifecycleOperationGate.Release();
+            }
         }
 
         internal async Task RaiseLockedForTestsAsync() => await SetLockedAsync(true).ConfigureAwait(false);
@@ -94,7 +121,10 @@ namespace TaskTree.Modules.SessionLock
 
         private void CheckSessionState(object? state)
         {
-            if (!_running) return;
+            lock (_lifecycleGate)
+            {
+                if (_disposed || !_running) return;
+            }
             var desktop = OpenInputDesktop(0, false, DesktopSwitchDesktop);
             if (desktop != IntPtr.Zero)
             {
@@ -139,16 +169,26 @@ namespace TaskTree.Modules.SessionLock
 
         public void Dispose()
         {
-            lock (_lifecycleGate)
+            _lifecycleOperationGate.Wait();
+            try
             {
-                if (_disposed) return;
-                Volatile.Write(ref _disposed, true);
-            }
+                Timer? timer;
+                lock (_lifecycleGate)
+                {
+                    if (_disposed) return;
+                    Volatile.Write(ref _disposed, true);
+                    _running = false;
+                    timer = _sessionMonitorTimer;
+                    _sessionMonitorTimer = null;
+                }
 
-            _running = false;
-            _sessionMonitorTimer?.Dispose();
-            _sessionMonitorTimer = null;
-            _compliance.AutoLogoffTriggered -= OnAutoLogoffTriggered;
+                timer?.Dispose();
+                _compliance.AutoLogoffTriggered -= OnAutoLogoffTriggered;
+            }
+            finally
+            {
+                _lifecycleOperationGate.Release();
+            }
         }
     }
 }

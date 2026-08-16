@@ -4,6 +4,7 @@
 
 using System;
 using System.ComponentModel;
+using System.Threading;
 using System.Threading.Tasks;
 using TaskTree.Core.Abstractions;
 using TaskTree.Core.Models;
@@ -45,6 +46,7 @@ namespace TaskTree.Modules.TrayHost
         private readonly IComplianceCore _compliance;
         private readonly ISecureStore _secureStore;
         private readonly IClock _clock;
+        private readonly SemaphoreSlim _operationGate = new(1, 1);
         private bool _disposed;
         private bool _initialized;
         private bool _hotkeyRegistered;
@@ -68,28 +70,44 @@ namespace TaskTree.Modules.TrayHost
             ThrowIfDisposed();
             if (messageOnlyHwnd == IntPtr.Zero)
                 throw new ArgumentException("A message-only window handle is required.", nameof(messageOnlyHwnd));
-            if (_initialized) return;
-            var config = await GetCurrentConfigAsync().ConfigureAwait(false);
+            await _operationGate.WaitAsync().ConfigureAwait(false);
             try
             {
-                Register(messageOnlyHwnd, config);
-                _messageOnlyHwnd = messageOnlyHwnd;
-                _hotkeyRegistered = true;
-                _initialized = true;
+                ThrowIfDisposed();
+                if (_initialized) return;
+                var config = await LoadCurrentConfigAsync().ConfigureAwait(false);
+                try
+                {
+                    Register(messageOnlyHwnd, config);
+                    _messageOnlyHwnd = messageOnlyHwnd;
+                    _hotkeyRegistered = true;
+                    _initialized = true;
+                }
+                catch (Win32Exception ex)
+                {
+                    _logger.LogWarning("Global hotkey registration failed: {0}", ex.Message);
+                    throw;
+                }
             }
-            catch (Win32Exception ex)
+            finally
             {
-                _logger.LogWarning("Global hotkey registration failed: {0}", ex.Message);
-                throw;
+                _operationGate.Release();
             }
         }
 
         /// <summary>Loads the persisted hotkey configuration, or the default when none exists.</summary>
         public async Task<HotkeyConfig> GetCurrentConfigAsync()
         {
-            ThrowIfDisposed();
-            var loaded = await _secureStore.LoadAsync<HotkeyConfig>(StorageKey).ConfigureAwait(false);
-            return loaded ?? HotkeyConfig.Default;
+            await _operationGate.WaitAsync().ConfigureAwait(false);
+            try
+            {
+                ThrowIfDisposed();
+                return await LoadCurrentConfigAsync().ConfigureAwait(false);
+            }
+            finally
+            {
+                _operationGate.Release();
+            }
         }
 
         /// <summary>Returns the default Ctrl+Alt+T binding.</summary>
@@ -108,39 +126,83 @@ namespace TaskTree.Modules.TrayHost
                 config.VirtualKey is < 1 or > ushort.MaxValue)
                 return HotkeyRegistrationResult.InvalidConfig;
 
-            var oldConfig = await GetCurrentConfigAsync().ConfigureAwait(false);
-            if (_initialized)
-            {
-                try
-                {
-                    HotkeyInterop.Unregister(_messageOnlyHwnd, HotkeyId);
-                    Register(_messageOnlyHwnd, config);
-                    _hotkeyRegistered = true;
-                }
-                catch (Win32Exception ex)
-                {
-                    _logger.LogWarning("Global hotkey replacement failed: {0}", ex.Message);
-                    try { Register(_messageOnlyHwnd, oldConfig); _hotkeyRegistered = true; } catch { }
-                    return HotkeyRegistrationResult.ConflictDetected;
-                }
-            }
-
-            await _secureStore.SaveAsync(StorageKey, config).ConfigureAwait(false);
-
+            await _operationGate.WaitAsync().ConfigureAwait(false);
+            HotkeyChangedEventArgs? changed = null;
             try
             {
-                await _compliance.AuditAsync(new AuditEntry
+                ThrowIfDisposed();
+                var oldConfig = await LoadCurrentConfigAsync().ConfigureAwait(false);
+                var nativeRegistrationChanged = false;
+                if (_initialized)
                 {
-                    Module = "HotkeyManager",
-                    Action = "HotkeyConfigChanged",
-                    Result = "success",
-                    Timestamp = _clock.UtcNow,
-                }).ConfigureAwait(false);
-            }
-            catch (Exception ex) { _logger.LogError(ex, "HotkeyManager audit failed: {0}", ex.Message); }
+                    try
+                    {
+                        HotkeyInterop.Unregister(_messageOnlyHwnd, HotkeyId);
+                        Register(_messageOnlyHwnd, config);
+                        _hotkeyRegistered = true;
+                        nativeRegistrationChanged = true;
+                    }
+                    catch (Win32Exception ex)
+                    {
+                        _logger.LogWarning("Global hotkey replacement failed: {0}", ex.Message);
+                        try { Register(_messageOnlyHwnd, oldConfig); _hotkeyRegistered = true; } catch { }
+                        return HotkeyRegistrationResult.ConflictDetected;
+                    }
+                }
 
-            HotkeyChanged?.Invoke(this, new HotkeyChangedEventArgs { OldConfig = oldConfig, NewConfig = config });
+                try
+                {
+                    await _secureStore.SaveAsync(StorageKey, config).ConfigureAwait(false);
+                }
+                catch
+                {
+                    if (nativeRegistrationChanged)
+                        RestoreRegistration(oldConfig);
+                    throw;
+                }
+
+                try
+                {
+                    await _compliance.AuditAsync(new AuditEntry
+                    {
+                        Module = "HotkeyManager",
+                        Action = "HotkeyConfigChanged",
+                        Result = "success",
+                        Timestamp = _clock.UtcNow,
+                    }).ConfigureAwait(false);
+                }
+                catch (Exception ex) { _logger.LogError(ex, "HotkeyManager audit failed: {0}", ex.Message); }
+
+                changed = new HotkeyChangedEventArgs { OldConfig = oldConfig, NewConfig = config };
+            }
+            finally
+            {
+                _operationGate.Release();
+            }
+
+            HotkeyChanged?.Invoke(this, changed!);
             return HotkeyRegistrationResult.Success;
+        }
+
+        private async Task<HotkeyConfig> LoadCurrentConfigAsync()
+        {
+            var loaded = await _secureStore.LoadAsync<HotkeyConfig>(StorageKey).ConfigureAwait(false);
+            return loaded ?? HotkeyConfig.Default;
+        }
+
+        private void RestoreRegistration(HotkeyConfig oldConfig)
+        {
+            try { HotkeyInterop.Unregister(_messageOnlyHwnd, HotkeyId); } catch { }
+            try
+            {
+                Register(_messageOnlyHwnd, oldConfig);
+                _hotkeyRegistered = true;
+            }
+            catch (Exception ex)
+            {
+                _hotkeyRegistered = false;
+                _logger.LogError(ex, "HotkeyManager failed to restore the previous binding: {0}", ex.Message);
+            }
         }
 
         private void ThrowIfDisposed() { if (_disposed) throw new ObjectDisposedException(nameof(HotkeyManager)); }
@@ -151,15 +213,23 @@ namespace TaskTree.Modules.TrayHost
         /// <summary>Releases the registered global hotkey.</summary>
         public void Dispose()
         {
-            if (_disposed) return;
-            if (_hotkeyRegistered)
+            _operationGate.Wait();
+            try
             {
-                try { HotkeyInterop.Unregister(_messageOnlyHwnd, HotkeyId); }
-                catch (Exception ex) { _logger.LogWarning("Global hotkey unregister failed: {0}", ex.Message); }
-                _hotkeyRegistered = false;
+                if (_disposed) return;
+                if (_hotkeyRegistered)
+                {
+                    try { HotkeyInterop.Unregister(_messageOnlyHwnd, HotkeyId); }
+                    catch (Exception ex) { _logger.LogWarning("Global hotkey unregister failed: {0}", ex.Message); }
+                    _hotkeyRegistered = false;
+                }
+                try { _logger.LogInformation("HotkeyManager disposed."); } catch { }
+                _disposed = true;
             }
-            try { _logger.LogInformation("HotkeyManager disposed."); } catch { }
-            _disposed = true;
+            finally
+            {
+                _operationGate.Release();
+            }
         }
     }
 }

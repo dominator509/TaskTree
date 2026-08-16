@@ -15,6 +15,8 @@
 - Reminder lifecycle safety: delivery callbacks are tracked, cancellation-aware, and drained before `StopAsync` returns; callbacks arriving after stop are ignored.
 - Session-state safety: overlapping lock/unlock observations serialize audit and event publication, and timer callbacks do not publish a new UI transition after disposal.
 - Compliance idle-monitor safety: start/replacement/disposal and timer callback handling are serialized; disposed instances reject restart and do not continue into workstation locking.
+- Provider safety: SMTP and GitHub delivery calls are bounded to five seconds per report; timeout failures return redacted status text without credentials.
+- Crash-capture safety: both global hook installation and BugReporter event subscription are idempotent, preventing duplicate queued crash reports.
 - Packaging preflight: `build-msix.ps1` resolves the installed Windows SDK tools by architecture, uses the repo-local .NET 8 executable when present, stages `Package.appxmanifest` beside the published output, and fails closed before restore when required assets are absent.
 
 ## Open Environment Gates
