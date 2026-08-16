@@ -120,9 +120,20 @@ namespace TaskTree.Modules.SessionLock
                 ThrowIfDisposed();
                 if (IsLocked == locked) return;
 
+                var previousLocked = IsLocked;
                 IsLocked = locked;
                 var action = locked ? "SessionLocked" : "SessionUnlocked";
-                await AuditAsync(action).ConfigureAwait(false);
+                try
+                {
+                    await AuditAsync(action).ConfigureAwait(false);
+                }
+                catch
+                {
+                    // Do not publish or retain a state transition that was not
+                    // durably recorded in the compliance audit chain.
+                    IsLocked = previousLocked;
+                    throw;
+                }
 
                 // Disposal may race a timer callback that was already in flight.
                 // Do not publish a post-disposal UI state transition.

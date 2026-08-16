@@ -6,7 +6,7 @@
 ## Current Evidence
 
 - Release build: passed with 0 warnings and 0 errors.
-- Offline contract suite: 13 applicable assemblies, 411 passing non-live, non-performance tests, 0 failures, 0 skips. The last Live-inclusive baseline before this delta reports 415 passed and 1 intentionally skipped Live desktop-metrics test (416 total); the current Live-inclusive lane was not repeated. Performance tests run in a separate lane because their latency thresholds are timing-sensitive under parallel solution execution.
+- Offline contract suite: 13 applicable assemblies, 412 passing non-live, non-performance tests, 0 failures, 0 skips. The last Live-inclusive baseline before this delta reports 415 passed and 1 intentionally skipped Live desktop-metrics test (416 total); the current Live-inclusive lane was not repeated. Performance tests run in a separate lane because their latency thresholds are timing-sensitive under parallel solution execution.
 - Performance lane: 7 measurable Release cases passed in isolation; the separate Live desktop-metrics case remains intentionally excluded. Current measured ReminderScheduler 1,000-task tick is 0.2540 ms; 10 MB SecureStore save/load is 41.3432/47.8530 ms. 10k and 100k audit-chain checks passed.
 - Built-in SDK Code Coverage: the previous `--collect:"Code Coverage"` rerun passed 404 non-live, non-performance tests and produced a fresh ignored `TestResults/` artifact. The last fully converted production-source report remains 1,651/2,137 lines covered (77.26%); no repo-local Cobertura converter is checked in. Coverage was not rerun for this lifecycle-only delta.
 - Packaging preflight: `packaging/build-msix.ps1` now resolves the installed x64 Windows SDK tools and stages the manifest/assets layout, then fails before restore with the exact missing-assets gate because `packaging/Assets/` is absent.
@@ -44,7 +44,8 @@
 - Closed a local tamper-response gap without changing public contracts: invalid startup audit chains now export the validated last-known-good prefix through atomic temporary-file promotion and show a WPF warning when an application dispatcher is available; focused Orchestrator coverage verifies the export.
 - Closed two local fail-closed integrity gaps without changing public contracts: malformed null audit entries now make chain verification return false, and invalid persisted settings are rejected on load and replaced with documented defaults.
 - Closed an audit identity gap without changing public contracts: the central audit writer now resolves empty actors to the current Windows user SID, and TaskEngine no longer records `Environment.UserName` in audit entries.
-- Post-v1.0.78 rerun: 411 non-live, non-performance tests passed; 7 performance tests passed; the Live-inclusive lane was not repeated after the additive test changes.
+- Closed a SessionLock integrity gap without changing public contracts: failed lock/unlock transition audits now restore the prior in-memory state so an unaudited state cannot suppress later observations or events.
+- Post-v1.0.79 rerun: 412 non-live, non-performance tests passed; 7 performance tests passed; the Live-inclusive lane was not repeated after the additive test changes.
 - Validation was local-only; no production secrets, signing keys, PHI source lists, or provider endpoints were used.
 
 ## Acceptance Blockers

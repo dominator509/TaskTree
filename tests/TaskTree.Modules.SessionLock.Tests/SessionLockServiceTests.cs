@@ -44,6 +44,30 @@ namespace TaskTree.Modules.SessionLock.Tests
         [TestMethod] public async Task RaiseLockedForTestsAsync_SetsIsLockedTrue(){var(svc,_)=Build();await svc.RaiseLockedForTestsAsync();Assert.IsTrue(svc.IsLocked);}
         [TestMethod] public async Task RaiseLockedForTestsAsync_RaisesEvent(){var(svc,_)=Build();var raised=false;svc.SessionLockChanged+=(s,e)=>raised=e.IsLocked;await svc.RaiseLockedForTestsAsync();Assert.IsTrue(raised);}
         [TestMethod] public async Task RaiseLockedForTestsAsync_AuditsLocked(){var(svc,comp)=Build();await svc.RaiseLockedForTestsAsync();comp.Verify(c=>c.AuditAsync(It.Is<AuditEntry>(e=>e.Action=="SessionLocked")),Times.Once);}
+        [TestMethod]
+        public async Task Transition_WhenAuditFails_RollsBackStateAndAllowsRetry()
+        {
+            var comp = new Mock<IComplianceCore>(MockBehavior.Strict);
+            var fail = true;
+            comp.Setup(c => c.AuditAsync(It.IsAny<AuditEntry>()))
+                .Returns(() => fail
+                    ? Task.FromException(new InvalidOperationException("audit unavailable"))
+                    : Task.CompletedTask);
+            var svc = new SessionLockService(new FakeClock(), comp.Object, new Mock<IAppLogger>().Object);
+
+            await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                () => svc.RaiseLockedForTestsAsync());
+            Assert.IsFalse(svc.IsLocked);
+
+            var raised = false;
+            svc.SessionLockChanged += (_, args) => raised = args.IsLocked;
+            fail = false;
+            await svc.RaiseLockedForTestsAsync();
+
+            Assert.IsTrue(svc.IsLocked);
+            Assert.IsTrue(raised);
+            comp.Verify(c => c.AuditAsync(It.Is<AuditEntry>(e => e.Action == "SessionLocked")), Times.Exactly(2));
+        }
         [TestMethod] public async Task RaiseUnlockedForTestsAsync_SetsIsLockedFalse(){var(svc,_)=Build();await svc.RaiseLockedForTestsAsync();await svc.RaiseUnlockedForTestsAsync();Assert.IsFalse(svc.IsLocked);}
         [TestMethod] public async Task DuplicateLockEvent_Suppressed(){var(svc,comp)=Build();await svc.RaiseLockedForTestsAsync();await svc.RaiseLockedForTestsAsync();comp.Verify(c=>c.AuditAsync(It.Is<AuditEntry>(e=>e.Action=="SessionLocked")),Times.Once);}
         [TestMethod]
