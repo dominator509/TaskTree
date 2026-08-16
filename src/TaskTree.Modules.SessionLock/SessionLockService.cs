@@ -47,6 +47,7 @@ namespace TaskTree.Modules.SessionLock
         public async Task StartAsync(CancellationToken ct)
         {
             await _lifecycleOperationGate.WaitAsync(ct).ConfigureAwait(false);
+            Timer? startedTimer = null;
             try
             {
                 lock (_lifecycleGate)
@@ -54,10 +55,28 @@ namespace TaskTree.Modules.SessionLock
                     ThrowIfDisposed();
                     if (_running) throw new InvalidOperationException("SessionLockService already running.");
                     _running = true;
-                    _sessionMonitorTimer = new Timer(CheckSessionState, null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
+                    startedTimer = new Timer(CheckSessionState, null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
+                    _sessionMonitorTimer = startedTimer;
                 }
 
-                await AuditAsync("SessionLockStarted").ConfigureAwait(false);
+                try
+                {
+                    await AuditAsync("SessionLockStarted").ConfigureAwait(false);
+                }
+                catch
+                {
+                    lock (_lifecycleGate)
+                    {
+                        if (ReferenceEquals(_sessionMonitorTimer, startedTimer))
+                        {
+                            _sessionMonitorTimer = null;
+                            _running = false;
+                        }
+                    }
+
+                    startedTimer.Dispose();
+                    throw;
+                }
             }
             finally
             {

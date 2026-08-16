@@ -20,6 +20,24 @@ namespace TaskTree.Modules.SessionLock.Tests
         private static (SessionLockService svc, Mock<IComplianceCore> comp) Build(){var comp=new Mock<IComplianceCore>(MockBehavior.Strict);comp.Setup(c=>c.AuditAsync(It.IsAny<AuditEntry>())).Returns(Task.CompletedTask);var log=new Mock<IAppLogger>(MockBehavior.Loose);return(new SessionLockService(new FakeClock(),comp.Object,log.Object),comp);}
         [TestMethod] public void Constructor_NullArgs_Throw(){var c=new FakeClock();var comp=new Mock<IComplianceCore>().Object;var log=new Mock<IAppLogger>().Object;Assert.ThrowsException<ArgumentNullException>(()=>new SessionLockService(null!,comp,log));Assert.ThrowsException<ArgumentNullException>(()=>new SessionLockService(c,null!,log));Assert.ThrowsException<ArgumentNullException>(()=>new SessionLockService(c,comp,null!));}
         [TestMethod] public async Task StartAsync_WhenNotRunning_SetsRunningAndAudits(){var(svc,comp)=Build();await svc.StartAsync(CancellationToken.None);comp.Verify(c=>c.AuditAsync(It.Is<AuditEntry>(e=>e.Action=="SessionLockStarted")),Times.Once);}
+        [TestMethod]
+        public async Task StartAsync_WhenStartupAuditFails_CleansUpAndAllowsRetry()
+        {
+            var comp = new Mock<IComplianceCore>(MockBehavior.Strict);
+            var fail = true;
+            comp.Setup(c => c.AuditAsync(It.IsAny<AuditEntry>()))
+                .Returns(() => fail
+                    ? Task.FromException(new InvalidOperationException("audit unavailable"))
+                    : Task.CompletedTask);
+            var svc = new SessionLockService(new FakeClock(), comp.Object, new Mock<IAppLogger>().Object);
+
+            await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                () => svc.StartAsync(CancellationToken.None));
+
+            fail = false;
+            await svc.StartAsync(CancellationToken.None);
+            await svc.StopAsync();
+        }
         [TestMethod] public async Task StartAsync_CalledTwice_ThrowsInvalidOperationException(){var(svc,_)=Build();await svc.StartAsync(CancellationToken.None);await Assert.ThrowsExceptionAsync<InvalidOperationException>(()=>svc.StartAsync(CancellationToken.None));}
         [TestMethod] public async Task StopAsync_WhenNotRunning_IsNoOp(){var(svc,comp)=Build();await svc.StopAsync();comp.Verify(c=>c.AuditAsync(It.IsAny<AuditEntry>()),Times.Never);}
         [TestMethod] public async Task StopAsync_WhenRunning_AuditsStopped(){var(svc,comp)=Build();await svc.StartAsync(CancellationToken.None);await svc.StopAsync();comp.Verify(c=>c.AuditAsync(It.Is<AuditEntry>(e=>e.Action=="SessionLockStopped")),Times.Once);}

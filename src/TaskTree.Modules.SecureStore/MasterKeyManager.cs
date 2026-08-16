@@ -84,12 +84,12 @@ public sealed class MasterKeyManager : IMasterKeyManager
     /// <inheritdoc />
     public async Task<byte[]> GetOrCreateMasterKeyAsync()
     {
-        if (_cachedKey is not null) return _cachedKey;
+        if (_cachedKey is not null) return CopyCachedKey();
 
         await _gate.WaitAsync().ConfigureAwait(false);
         try
         {
-            if (_cachedKey is not null) return _cachedKey;   // double-check after lock
+            if (_cachedKey is not null) return CopyCachedKey();   // double-check after lock
 
             if (File.Exists(_keyFilePath))
             {
@@ -100,7 +100,7 @@ public sealed class MasterKeyManager : IMasterKeyManager
                     throw new CryptographicException(
                         $"Master key file at {_keyFilePath} unwrapped to {_cachedKey.Length} bytes (expected 32).");
                 _logger.LogInformation("MasterKeyManager loaded existing master key from {0}", _keyFilePath);
-                return _cachedKey;
+                return CopyCachedKey();
             }
 
             var fresh = new byte[32];
@@ -115,11 +115,13 @@ public sealed class MasterKeyManager : IMasterKeyManager
 
             _cachedKey = fresh;
             _logger.LogInformation("MasterKeyManager generated new master key at {0}", _keyFilePath);
-            return _cachedKey;
+            return CopyCachedKey();
         }
         finally
         {
             _gate.Release();
         }
     }
+
+    private byte[] CopyCachedKey() => (byte[])_cachedKey!.Clone();
 }

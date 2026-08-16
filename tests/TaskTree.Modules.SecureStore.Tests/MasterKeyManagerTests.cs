@@ -108,6 +108,26 @@ public sealed class MasterKeyManagerTests
         var k2 = await mgr.GetOrCreateMasterKeyAsync();
 
         CollectionAssert.AreEqual(k1, k2);
+        Assert.AreNotSame(k1, k2, "Callers must not receive the mutable cached key buffer.");
+    }
+
+    /// <summary>Cached key material cannot be modified through a caller-owned result buffer.</summary>
+    [TestMethod]
+    [TestCategory("Live")]
+    public async Task MasterKeyManager_ReturnsDefensiveCopies()
+    {
+        using var paths = new TestPaths();
+        var logger = new Mock<IAppLogger>();
+        var mgr = new MasterKeyManager(paths.KeyDir, logger.Object);
+
+        var first = await mgr.GetOrCreateMasterKeyAsync();
+        var expected = (byte[])first.Clone();
+        first[0] ^= 0xFF;
+
+        var second = await mgr.GetOrCreateMasterKeyAsync();
+
+        CollectionAssert.AreEqual(expected, second);
+        Assert.AreNotSame(first, second);
     }
 
     /// <summary>P1B-AC4 (Live): key persists across MasterKeyManager instances (DPAPI unwrap of the file).</summary>

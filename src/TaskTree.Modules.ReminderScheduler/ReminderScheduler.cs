@@ -73,11 +73,29 @@ namespace TaskTree.Modules.ReminderScheduler
             try
             {
                 if (_running) throw new InvalidOperationException("ReminderScheduler is already running.");
-                _internalCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-                _timer = new PeriodicTimer(_cadence);
-                _loopTask = RunLoopAsync(_timer, _internalCts.Token);
+                var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+                var timer = new PeriodicTimer(_cadence);
+                var loopTask = RunLoopAsync(timer, cts.Token);
+                _internalCts = cts;
+                _timer = timer;
+                _loopTask = loopTask;
                 _running = true;
-                _logger.LogInformation($"ReminderScheduler started with cadence {_cadence}.");
+                try
+                {
+                    _logger.LogInformation($"ReminderScheduler started with cadence {_cadence}.");
+                }
+                catch
+                {
+                    _running = false;
+                    _internalCts = null;
+                    _timer = null;
+                    _loopTask = null;
+                    cts.Cancel();
+                    timer.Dispose();
+                    await loopTask.ConfigureAwait(false);
+                    cts.Dispose();
+                    throw;
+                }
             }
             finally { _lifecycleGate.Release(); }
         }

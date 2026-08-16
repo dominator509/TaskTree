@@ -114,6 +114,26 @@ namespace TaskTree.Modules.ReminderScheduler.Tests
         }
 
         [TestMethod, TestCategory("Offline")]
+        public async Task StartAsync_WhenStartupLogFails_CleansUpAndAllowsRetry()
+        {
+            var (scheduler, _, _, _, logger) = Build();
+            var fail = true;
+            logger.Setup(l => l.LogInformation(It.IsAny<string>(), It.IsAny<object?[]>()))
+                .Callback(() =>
+                {
+                    if (fail) throw new InvalidOperationException("log unavailable");
+                });
+
+            await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                () => scheduler.StartAsync(CancellationToken.None));
+
+            fail = false;
+            await scheduler.StartAsync(CancellationToken.None);
+            await scheduler.StopAsync();
+            scheduler.Dispose();
+        }
+
+        [TestMethod, TestCategory("Offline")]
         public async Task TickOnceAsync_FiresReminderAndAuditsAndPopulatesEvent()
         {
             var node = MakeNode(Priority.Critical, deadline: null);
