@@ -56,7 +56,7 @@ The checkout contains stitched outputs and phase evidence, not the original exte
 - stitching artifacts: `docs/stitching/*.md`
 - compile closure artifacts: `docs/compile/*.md`
 - source/test project inventory: see `docs/stitching/stitched-file-manifest.md`
-- marker verifier: `tools/find-spec-derivations.ps1`, currently green at `Grand total: 179 expected 179`
+- marker verifier: `tools/find-spec-derivations.ps1`, currently green at `Grand total: 178 expected 178` after removal of the obsolete Phase 1G-replaced reminder placeholder
 
 ## Inventory Boundary
 
@@ -67,7 +67,7 @@ The checkout contains stitched outputs and phase evidence, not the original exte
 | Stitched file inventory | Applied | See `docs/stitching/stitched-file-manifest.md`. |
 | Collision register | Partially applied | TestSupport duplicate and obsolete Tier 2 window pair are recorded in `docs/stitching/file-collision-register.md`. |
 | Application log | Partially applied | Codex continuation sequences `C-001` through `C-003` are recorded in `docs/stitching/bundle-application-log.md`; original bundle order remains unreconstructed without the source bundles. |
-| Restore/build/test outputs | Deferred | Blocked locally by missing .NET SDK; see `docs/compile/compile-error-register.md` entry `P5B-E002`. |
+| Restore/build/test outputs | Applied | Repo-local .NET SDK 8.0.422 restored the solution; Debug/Release builds and the non-live Release test gate are green. |
 
 ## Known Regeneration / Supersession Notes
 

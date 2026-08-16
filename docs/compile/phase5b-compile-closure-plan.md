@@ -36,7 +36,7 @@ dotnet build TaskTree.sln -c Release
 | Step | Status | Evidence / next gate |
 |---|---|---|
 | Confirm stitched repo is authoritative | Applied | `docs/stitching/*.md` now records current repo evidence and source-of-truth boundaries. |
-| Marker verification | Passing | `rtk powershell -NoProfile -ExecutionPolicy Bypass -File tools/find-spec-derivations.ps1 -Root .` reports `Grand total: 179 expected 179`. |
+| Marker verification | Passing | `rtk powershell -NoProfile -ExecutionPolicy Bypass -File tools/find-spec-derivations.ps1 -Root .` reports `Grand total: 178 expected 178` after removal of the obsolete Phase 1G-replaced reminder placeholder. |
 | Restore | Passing | `rtk C:\Users\domin\.dotnet\dotnet.exe restore TaskTree.sln` succeeded after installing .NET SDK 8.0.422. |
 | Debug build | Passing | `rtk C:\Users\domin\.dotnet\dotnet.exe build TaskTree.sln -c Debug` succeeded after compile-only fixes. |
 | Release build | Passing | `rtk C:\Users\domin\.dotnet\dotnet.exe build TaskTree.sln -c Release` succeeded after the Tier 2 obsolete window deletion. |
